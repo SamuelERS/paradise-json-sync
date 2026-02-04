@@ -1,7 +1,6 @@
 /**
  * FileList Component Tests (Tests del Componente Lista de Archivos)
  */
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { FileList } from '../../src/components/upload/FileList';

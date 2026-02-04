@@ -1,7 +1,6 @@
 /**
  * ProgressBar Component Tests (Tests del Componente Barra de Progreso)
  */
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { ProgressBar } from '../../src/components/common/ProgressBar';

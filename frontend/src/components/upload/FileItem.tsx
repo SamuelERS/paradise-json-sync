@@ -4,7 +4,6 @@
  * Single file item in the upload list.
  * Elemento individual de archivo en la lista de carga.
  */
-import React from 'react';
 import type { FileInfo } from '../../types';
 
 interface FileItemProps {

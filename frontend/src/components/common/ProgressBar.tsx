@@ -4,7 +4,6 @@
  * Visual progress indicator with multiple states.
  * Indicador visual de progreso con múltiples estados.
  */
-import React from 'react';
 
 interface ProgressBarProps {
   /** Progress percentage (0-100) / Porcentaje de progreso */

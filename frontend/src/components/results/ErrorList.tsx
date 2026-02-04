@@ -4,7 +4,7 @@
  * Displays processing errors.
  * Muestra los errores de procesamiento.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { FileError } from '../../types';
 
 interface ErrorListProps {

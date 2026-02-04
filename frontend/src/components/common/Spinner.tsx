@@ -4,7 +4,6 @@
  * Animated loading indicator.
  * Indicador de carga animado.
  */
-import React from 'react';
 
 interface SpinnerProps {
   /** Size of the spinner / Tamaño del spinner */

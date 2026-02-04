@@ -4,7 +4,6 @@
  * Fixed header with logo and navigation.
  * Encabezado fijo con logo y navegación.
  */
-import React from 'react';
 
 interface HeaderProps {
   /** Application title / Título de la aplicación */

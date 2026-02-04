@@ -4,7 +4,6 @@
  * Shows progress of file upload/processing.
  * Muestra el progreso de carga/procesamiento de archivos.
  */
-import React from 'react';
 import { ProgressBar } from '../common/ProgressBar';
 import { Spinner } from '../common/Spinner';
 

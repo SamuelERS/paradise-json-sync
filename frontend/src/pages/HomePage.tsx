@@ -4,7 +4,7 @@
  * Main page with file upload and processing workflow.
  * Página principal con carga de archivos y flujo de procesamiento.
  */
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { FileInfo, ProcessResults, AppStatus } from '../types';
 import { MainLayout } from '../components/layout';
 import { Card, Button, Alert } from '../components/common';

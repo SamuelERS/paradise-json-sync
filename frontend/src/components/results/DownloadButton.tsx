@@ -4,7 +4,6 @@
  * Styled button for downloading processed files.
  * Botón estilizado para descargar archivos procesados.
  */
-import React from 'react';
 
 interface DownloadButtonProps {
   /** Download type / Tipo de descarga */

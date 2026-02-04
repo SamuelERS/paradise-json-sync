@@ -1,7 +1,6 @@
 /**
  * ResultsPanel Component Tests (Tests del Componente Panel de Resultados)
  */
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ResultsPanel } from '../../src/components/results/ResultsPanel';

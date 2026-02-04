@@ -1,7 +1,6 @@
 /**
  * Dropzone Component Tests (Tests del Componente Zona de Arrastre)
  */
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Dropzone } from '../../src/components/upload/Dropzone';
@@ -24,10 +23,10 @@ describe('Dropzone', () => {
     expect(screen.getByText('Max: 10 archivos')).toBeInTheDocument();
   });
 
-  it('is disabled when disabled prop is true', () => {
-    render(<Dropzone onFilesSelected={vi.fn()} disabled />);
-    const dropzone = screen.getByText('Arrastra archivos aquí').closest('div');
-    expect(dropzone?.parentElement).toHaveClass('cursor-not-allowed');
+  it('renders with disabled styling when disabled prop is true', () => {
+    const { container } = render(<Dropzone onFilesSelected={vi.fn()} disabled />);
+    const dropzoneDiv = container.querySelector('.border-dashed');
+    expect(dropzoneDiv).toHaveClass('border-gray-200', 'bg-gray-50');
   });
 
   it('calls onFilesSelected when files are dropped', async () => {

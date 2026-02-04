@@ -4,7 +4,6 @@
  * Displays processing results and download options.
  * Muestra los resultados del procesamiento y opciones de descarga.
  */
-import React from 'react';
 import type { ProcessResults } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';

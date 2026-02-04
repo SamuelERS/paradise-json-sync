@@ -4,7 +4,6 @@
  * Page footer with copyright and links.
  * Pie de página con copyright y enlaces.
  */
-import React from 'react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();

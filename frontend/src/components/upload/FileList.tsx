@@ -4,7 +4,6 @@
  * Displays list of selected files.
  * Muestra la lista de archivos seleccionados.
  */
-import React from 'react';
 import type { FileInfo } from '../../types';
 import { FileItem } from './FileItem';
 
@@ -12,7 +11,7 @@ interface FileListProps {
   /** List of files / Lista de archivos */
   files: FileInfo[];
   /** Remove file handler / Manejador de eliminación de archivo */
-  onRemove: (index: number) => void;
+  onRemove: (_index: number) => void;
 }
 
 export function FileList({ files, onRemove }: FileListProps) {

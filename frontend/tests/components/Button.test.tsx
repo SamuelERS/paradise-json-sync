@@ -1,7 +1,6 @@
 /**
  * Button Component Tests (Tests del Componente Botón)
  */
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Button } from '../../src/components/common/Button';

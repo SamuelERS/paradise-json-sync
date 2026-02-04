@@ -4,7 +4,6 @@
  * Displays messages to users with different severity levels.
  * Muestra mensajes a usuarios con diferentes niveles de severidad.
  */
-import React from 'react';
 
 interface AlertProps {
   /** Alert type / Tipo de alerta */
