@@ -1,0 +1,43 @@
+{
+  "name": "paradise-json-sync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Consolidación de archivos JSON y PDF de facturación",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "build": "cd frontend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "lint": "npm run lint:frontend && npm run lint:e2e",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:e2e": "cd e2e && npx tsc --noEmit",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "npm run test:unit:frontend && npm run test:unit:backend",
+    "test:unit:frontend": "cd frontend && npm test",
+    "test:unit:backend": "cd backend && pytest tests/ -v --ignore=tests/integration",
+    "test:integration": "npm run test:integration:frontend && npm run test:integration:backend",
+    "test:integration:frontend": "cd frontend && npm test -- tests/integration/",
+    "test:integration:backend": "cd backend && pytest tests/integration/ -v",
+    "test:e2e": "cd e2e && npx playwright test",
+    "test:e2e:headed": "cd e2e && npx playwright test --headed",
+    "test:e2e:debug": "cd e2e && npx playwright test --debug",
+    "test:e2e:ui": "cd e2e && npx playwright test --ui",
+    "test:e2e:report": "cd e2e && npx playwright show-report",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:coverage:frontend": "cd frontend && npm test -- --coverage",
+    "test:coverage:backend": "cd backend && pytest --cov=app --cov-report=html --cov-report=term",
+    "install:all": "npm install && npm run install:frontend && npm run install:backend && npm run install:e2e",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && pip install -r requirements.txt -r requirements-dev.txt",
+    "install:e2e": "cd e2e && npm install && npx playwright install",
+    "setup:e2e": "cd e2e && npx playwright install --with-deps"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
