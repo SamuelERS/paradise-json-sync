@@ -9,6 +9,7 @@ Endpoint de subida de archivos JSON y PDF.
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, File, UploadFile
@@ -62,7 +63,7 @@ async def upload_files(
         raise TooManyFilesError(count=len(files), max_files=MAX_FILES)
 
     # Validate and read each file
-    validated_files = []
+    validated_files: list[dict[str, Any]] = []
     for file in files:
         # Validate extension
         ext = Path(file.filename or "").suffix.lower()
@@ -80,13 +81,15 @@ async def upload_files(
                 max_size_mb=MAX_FILE_SIZE // (1024 * 1024),
             )
 
-        validated_files.append({
-            "file": file,
-            "content": content,
-            "name": file.filename or f"file_{len(validated_files)}",
-            "size": len(content),
-            "type": ext[1:],  # Remove the dot
-        })
+        validated_files.append(
+            {
+                "file": file,
+                "content": content,
+                "name": file.filename or f"file_{len(validated_files)}",
+                "size": len(content),
+                "type": ext[1:],  # Remove the dot
+            }
+        )
 
     # Save files
     upload_id = str(uuid4())

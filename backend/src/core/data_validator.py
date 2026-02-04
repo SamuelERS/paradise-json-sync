@@ -88,9 +88,7 @@ class DataValidator:
 
         # Validate issue date / Validar fecha de emisión
         if not self._validate_issue_date(invoice.issue_date):
-            errors.append(
-                f"Invalid issue date: {invoice.issue_date} / Fecha de emisión inválida"
-            )
+            errors.append(f"Invalid issue date: {invoice.issue_date} / Fecha de emisión inválida")
 
         # Validate totals / Validar totales
         total_errors = self._validate_total_calculations(invoice)
@@ -263,10 +261,7 @@ class DataValidator:
 
             # Validate description
             if not item.description or not item.description.strip():
-                errors.append(
-                    f"Item {i + 1} missing description / "
-                    f"Ítem {i + 1} sin descripción"
-                )
+                errors.append(f"Item {i + 1} missing description / Ítem {i + 1} sin descripción")
 
         return errors
 

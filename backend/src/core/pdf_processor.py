@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import fitz  # PyMuPDF
+
     PYMUPDF_AVAILABLE = True
 except ImportError:
     PYMUPDF_AVAILABLE = False
@@ -67,9 +68,7 @@ class PDFProcessor:
             output_dir: Default output directory / Directorio de salida por defecto
         """
         if not PYMUPDF_AVAILABLE:
-            logger.warning(
-                "PyMuPDF not available. Install with: pip install PyMuPDF"
-            )
+            logger.warning("PyMuPDF not available. Install with: pip install PyMuPDF")
 
         self.output_dir = Path(output_dir) if output_dir else None
         logger.debug("PDFProcessor initialized with output_dir=%s", output_dir)

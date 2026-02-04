@@ -210,9 +210,7 @@ class JSONProcessor:
         # Warn about missing optional fields
         for field in self.OPTIONAL_FIELDS:
             if field not in data:
-                self.warnings.append(
-                    f"Missing optional field: {field} / Campo opcional faltante"
-                )
+                self.warnings.append(f"Missing optional field: {field} / Campo opcional faltante")
                 logger.debug("Missing optional field: %s", field)
 
         return True
@@ -292,9 +290,7 @@ class JSONProcessor:
         if normalized in type_map:
             return type_map[normalized]
 
-        self.warnings.append(
-            f"Unknown invoice type '{type_str}', defaulting to FACTURA"
-        )
+        self.warnings.append(f"Unknown invoice type '{type_str}', defaulting to FACTURA")
         logger.warning("Unknown invoice type: %s", type_str)
         return InvoiceType.FACTURA
 

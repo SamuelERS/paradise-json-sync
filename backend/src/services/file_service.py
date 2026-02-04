@@ -69,12 +69,14 @@ class FileService:
             async with aiofiles.open(file_path, "wb") as f:
                 await f.write(file_data["content"])
 
-            saved_files.append({
-                "name": file_data["name"],
-                "size": file_data["size"],
-                "type": file_data["type"],
-                "path": str(file_path),
-            })
+            saved_files.append(
+                {
+                    "name": file_data["name"],
+                    "size": file_data["size"],
+                    "type": file_data["type"],
+                    "path": str(file_path),
+                }
+            )
 
             logger.debug("Saved file: %s (%d bytes)", file_data["name"], file_data["size"])
 
@@ -153,9 +155,7 @@ class FileService:
         """
         now = datetime.utcnow()
         expired = [
-            upload_id
-            for upload_id, data in self._uploads.items()
-            if data["expires_at"] < now
+            upload_id for upload_id, data in self._uploads.items() if data["expires_at"] < now
         ]
 
         for upload_id in expired:

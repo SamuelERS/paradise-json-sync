@@ -179,9 +179,9 @@ class ExcelExporter:
 
         # Calculate statistics
         total_count = len(invoices)
-        total_subtotal = sum(inv.subtotal for inv in invoices)
-        total_tax = sum(inv.tax for inv in invoices)
-        total_amount = sum(inv.total for inv in invoices)
+        total_subtotal = sum((inv.subtotal for inv in invoices), Decimal(0))
+        total_tax = sum((inv.tax for inv in invoices), Decimal(0))
+        total_amount = sum((inv.total for inv in invoices), Decimal(0))
 
         # Count by type
         type_counts = dict.fromkeys(InvoiceType, 0)
@@ -269,7 +269,7 @@ class ExcelExporter:
             # Apply currency format to numeric cells
             for col in [6, 7, 8]:
                 cell = sheet.cell(row=row_num, column=col)
-                cell.number_format = f'{self.currency_symbol}#,##0.00'
+                cell.number_format = f"{self.currency_symbol}#,##0.00"
 
         # Auto-adjust column widths
         self._auto_adjust_columns(sheet)
@@ -315,7 +315,7 @@ class ExcelExporter:
                 # Apply currency format
                 for col in [5, 6]:
                     cell = sheet.cell(row=row_num, column=col)
-                    cell.number_format = f'{self.currency_symbol}#,##0.00'
+                    cell.number_format = f"{self.currency_symbol}#,##0.00"
 
                 row_num += 1
 

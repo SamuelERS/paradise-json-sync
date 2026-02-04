@@ -152,8 +152,7 @@ class JobService:
 
         # Calculate total amount
         total_amount = sum(
-            float(inv.total) if isinstance(inv.total, Decimal) else inv.total
-            for inv in invoices
+            float(inv.total) if isinstance(inv.total, Decimal) else inv.total for inv in invoices
         )
 
         job["status"] = "completed"
