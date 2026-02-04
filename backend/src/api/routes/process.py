@@ -103,11 +103,31 @@ async def process_job_task(
         output_filename = f"reporte_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{output_format}"
         output_path = OUTPUT_DIR / output_filename
 
-        exporter.export_to_excel(
-            invoices,
-            str(output_path),
-            include_summary=options.get("include_summary", True),
-        )
+        # Export based on format / Exportar según formato
+        if output_format == "xlsx":
+            exporter.export_to_excel(
+                invoices,
+                str(output_path),
+                include_summary=options.get("include_summary", True),
+            )
+        elif output_format == "csv":
+            exporter.export_to_csv(
+                invoices,
+                str(output_path),
+            )
+        elif output_format == "pdf":
+            exporter.export_to_pdf(
+                invoices,
+                str(output_path),
+                include_summary=options.get("include_summary", True),
+            )
+        elif output_format == "json":
+            exporter.export_to_json(
+                invoices,
+                str(output_path),
+            )
+        else:
+            raise ValueError(f"Unsupported format: {output_format}")
 
         # Complete job
         await job_service.complete_job(job_id, str(output_path), invoices)
