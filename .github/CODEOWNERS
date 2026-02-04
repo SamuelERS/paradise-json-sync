@@ -1,0 +1,26 @@
+# CODEOWNERS - Paradise JSON Sync
+# Este archivo define los propietarios de código para revisiones automáticas de PR
+
+# Propietario global (todos los archivos)
+* @SamuelERS
+
+# Backend
+/backend/ @SamuelERS
+
+# Frontend
+/frontend/ @SamuelERS
+
+# Configuración CI/CD y GitHub
+/.github/ @SamuelERS
+
+# Tests E2E
+/e2e/ @SamuelERS
+
+# Scripts de automatización
+/scripts/ @SamuelERS
+
+# Documentación
+/docs/ @SamuelERS
+
+# Tests
+/tests/ @SamuelERS
