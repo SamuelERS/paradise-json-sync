@@ -1,0 +1,118 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Ejecutar cada domingo a las 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  security-backend:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          pip install safety bandit pip-audit
+
+      - name: Safety check (vulnerabilidades en dependencias)
+        run: |
+          cd backend
+          safety check -r requirements.txt --output json > safety-report.json || true
+          cat safety-report.json
+
+      - name: Bandit check (análisis estático de seguridad)
+        run: |
+          cd backend
+          bandit -r app/ -f json -o bandit-report.json -ll || true
+          cat bandit-report.json
+
+      - name: Pip-audit (auditoría de paquetes)
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip-audit --format json > pip-audit-report.json || true
+          cat pip-audit-report.json
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-security-reports
+          path: |
+            backend/safety-report.json
+            backend/bandit-report.json
+            backend/pip-audit-report.json
+          retention-days: 30
+
+  security-frontend:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: NPM Audit
+        run: |
+          cd frontend
+          npm audit --json > npm-audit-report.json || true
+          cat npm-audit-report.json
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-security-reports
+          path: frontend/npm-audit-report.json
+          retention-days: 30
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: high
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
