@@ -66,6 +66,7 @@ frontend/build/
 temp/
 uploads/
 output/
+outputs/
 *.tmp
 
 # PDFs y JSON de prueba (opcional, comentar si deseas versionar ejemplos)
