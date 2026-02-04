@@ -1,0 +1,60 @@
+/**
+ * Global Styles (Estilos Globales)
+ *
+ * Tailwind CSS base imports and custom styles.
+ * Importaciones base de Tailwind CSS y estilos personalizados.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles / Estilos base */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  /* Focus styles / Estilos de enfoque */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+}
+
+/* Custom utilities / Utilidades personalizadas */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom component styles / Estilos de componentes personalizados */
+@layer components {
+  /* Scrollbar styles / Estilos de barra de desplazamiento */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.gray.400');
+  }
+}
