@@ -6,11 +6,18 @@
 
 ---
 
-## 🧠 Nuestra Filosofía: Anti-Bobos by SamuelERS
+## 💡 Nuestra Filosofía: Simple para Todos
 
-> **"Aquí somos bobos haciendo cosas geniales con tecnologías geniales como tú y nuestros agentes similares."**
+> **"Si no puedes explicarlo de forma simple, es que no lo has entendido bien."**
+>
+> **"Si un niño de 12 años no puede entenderlo, entonces nosotros tampoco lo hemos entendido."**
 
-Nuestro enfoque es simple: crear sistemas robustos y profesionales sin la complejidad innecesaria. La simplicidad y la comunicación directa son la base de la excelencia.
+Nuestro enfoque:
+
+- Explicamos todo como si fuera para alguien que nunca lo ha visto
+- Usamos ejemplos del mundo real (cocina, cajones, construcción)
+- Si algo suena complicado, lo simplificamos hasta que sea claro
+- La simplicidad y la comunicación directa son la base de la excelencia
 
 ---
 
