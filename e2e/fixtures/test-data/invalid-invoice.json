@@ -1,0 +1,7 @@
+{
+  "invalid": "This JSON file is missing required invoice fields",
+  "randomField": 12345,
+  "nested": {
+    "but": "no valid invoice structure"
+  }
+}
