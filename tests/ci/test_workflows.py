@@ -15,6 +15,19 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 WORKFLOWS_DIR = PROJECT_ROOT / ".github" / "workflows"
 
 
+def get_on_key(workflow: dict):
+    """
+    Obtener la clave 'on' del workflow.
+    YAML interpreta 'on' como True (booleano), por lo que
+    necesitamos buscar tanto 'on' como True.
+    """
+    if "on" in workflow:
+        return workflow["on"]
+    if True in workflow:
+        return workflow[True]
+    return None
+
+
 class TestCIWorkflow:
     """Tests para el workflow de CI principal"""
 
@@ -32,10 +45,12 @@ class TestCIWorkflow:
 
     def test_triggers_correctos(self, ci_workflow):
         """Verificar triggers en push y pull_request"""
-        assert "push" in ci_workflow["on"]
-        assert "pull_request" in ci_workflow["on"]
-        assert "main" in ci_workflow["on"]["push"]["branches"]
-        assert "develop" in ci_workflow["on"]["push"]["branches"]
+        on_config = get_on_key(ci_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        assert "push" in on_config
+        assert "pull_request" in on_config
+        assert "main" in on_config["push"]["branches"]
+        assert "develop" in on_config["push"]["branches"]
 
     def test_jobs_requeridos(self, ci_workflow):
         """Verificar que todos los jobs requeridos existen"""
@@ -95,12 +110,16 @@ class TestCDStagingWorkflow:
 
     def test_trigger_main(self, staging_workflow):
         """Verificar que se dispara en push a main"""
-        assert "push" in staging_workflow["on"]
-        assert "main" in staging_workflow["on"]["push"]["branches"]
+        on_config = get_on_key(staging_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        assert "push" in on_config
+        assert "main" in on_config["push"]["branches"]
 
     def test_workflow_dispatch(self, staging_workflow):
         """Verificar que permite ejecución manual"""
-        assert "workflow_dispatch" in staging_workflow["on"]
+        on_config = get_on_key(staging_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        assert "workflow_dispatch" in on_config
 
     def test_job_deploy_existe(self, staging_workflow):
         """Verificar que existe job de deploy"""
@@ -129,14 +148,18 @@ class TestCDProductionWorkflow:
 
     def test_requiere_confirm(self, production_workflow):
         """Verificar que requiere confirmación manual"""
-        assert "workflow_dispatch" in production_workflow["on"]
-        inputs = production_workflow["on"]["workflow_dispatch"]["inputs"]
+        on_config = get_on_key(production_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        assert "workflow_dispatch" in on_config
+        inputs = on_config["workflow_dispatch"]["inputs"]
         assert "confirm" in inputs
         assert inputs["confirm"]["required"] is True
 
     def test_requiere_version(self, production_workflow):
         """Verificar que requiere versión"""
-        inputs = production_workflow["on"]["workflow_dispatch"]["inputs"]
+        on_config = get_on_key(production_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        inputs = on_config["workflow_dispatch"]["inputs"]
         assert "version" in inputs
         assert inputs["version"]["required"] is True
 
@@ -173,7 +196,9 @@ class TestSecurityWorkflow:
 
     def test_tiene_schedule(self, security_workflow):
         """Verificar que tiene programación periódica"""
-        assert "schedule" in security_workflow["on"]
+        on_config = get_on_key(security_workflow)
+        assert on_config is not None, "No se encontró configuración 'on'"
+        assert "schedule" in on_config
 
     def test_jobs_seguridad_existen(self, security_workflow):
         """Verificar que existen jobs de seguridad"""
@@ -267,7 +292,9 @@ class TestWorkflowsYAMLValidity:
                     data = yaml.safe_load(f)
                     assert data is not None, f"{workflow_path.name} está vacío"
                     assert "name" in data, f"{workflow_path.name} no tiene nombre"
-                    assert "on" in data, f"{workflow_path.name} no tiene triggers"
+                    # YAML interpreta 'on' como True, verificar ambos
+                    on_config = get_on_key(data)
+                    assert on_config is not None, f"{workflow_path.name} no tiene triggers"
                     assert "jobs" in data, f"{workflow_path.name} no tiene jobs"
                 except yaml.YAMLError as e:
                     pytest.fail(f"YAML inválido en {workflow_path.name}: {e}")
