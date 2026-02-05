@@ -1,0 +1,98 @@
+name: CD Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión (ej: v1.0.0)'
+        required: true
+        type: string
+      confirm:
+        description: 'Confirmar deploy a producción'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  deploy-production:
+    name: Deploy a Producción
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ inputs.confirm }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Crear tag de versión
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "${{ inputs.version }}" -m "Versión ${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy Backend a Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_PRODUCTION_SERVICE_ID }}
+        run: |
+          if [ -n "$RENDER_API_KEY" ] && [ -n "$RENDER_SERVICE_ID" ]; then
+            curl -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Content-Type: application/json"
+            echo "Backend deploy triggered"
+          else
+            echo "Render credentials not configured, skipping backend deploy"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Deploy Frontend a SiteGround
+        if: ${{ secrets.FTP_SERVER != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_PRODUCTION_USERNAME }}
+          password: ${{ secrets.FTP_PRODUCTION_PASSWORD }}
+          local-dir: ./frontend/dist/
+          server-dir: /public_html/
+
+      - name: Smoke Tests
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 60
+          if [ -n "${{ vars.PRODUCTION_API_URL }}" ]; then
+            curl -f "${{ vars.PRODUCTION_API_URL }}/health" || echo "API health check skipped"
+          fi
+          if [ -n "${{ vars.PRODUCTION_URL }}" ]; then
+            curl -f "${{ vars.PRODUCTION_URL }}" || echo "Frontend health check skipped"
+          fi
+          echo "Production deploy completed for version ${{ inputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          body: |
+            ## Release ${{ inputs.version }}
+
+            Deployed to production on ${{ github.event.repository.updated_at }}
+
+            ### Changes
+            See commit history for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

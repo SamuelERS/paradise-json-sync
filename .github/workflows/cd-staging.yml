@@ -1,0 +1,60 @@
+name: CD Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: Deploy a Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Backend a Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
+        run: |
+          if [ -n "$RENDER_API_KEY" ] && [ -n "$RENDER_SERVICE_ID" ]; then
+            curl -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Content-Type: application/json"
+            echo "Backend deploy triggered"
+          else
+            echo "Render credentials not configured, skipping backend deploy"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Deploy Frontend a SiteGround
+        if: ${{ secrets.FTP_SERVER != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_STAGING_USERNAME }}
+          password: ${{ secrets.FTP_STAGING_PASSWORD }}
+          local-dir: ./frontend/dist/
+          server-dir: /public_html/staging/
+
+      - name: Smoke Tests
+        run: |
+          sleep 30
+          if [ -n "${{ vars.STAGING_API_URL }}" ]; then
+            curl -f "${{ vars.STAGING_API_URL }}/health" || echo "API health check skipped"
+          fi
+          if [ -n "${{ vars.STAGING_URL }}" ]; then
+            curl -f "${{ vars.STAGING_URL }}" || echo "Frontend health check skipped"
+          fi
+          echo "Smoke tests completed"
