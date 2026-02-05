@@ -19,6 +19,8 @@ interface ResultsPanelProps {
   onDownloadExcel: () => void;
   /** Download PDF handler / Manejador de descarga PDF */
   onDownloadPdf: () => void;
+  /** Download JSON handler / Manejador de descarga JSON */
+  onDownloadJson: () => void;
   /** Reset handler / Manejador de reinicio */
   onReset: () => void;
 }
@@ -28,6 +30,7 @@ export function ResultsPanel({
   results,
   onDownloadExcel,
   onDownloadPdf,
+  onDownloadJson,
   onReset,
 }: ResultsPanelProps) {
   if (status === 'pending' || status === 'processing') {
@@ -76,6 +79,7 @@ export function ResultsPanel({
           <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
             <DownloadButton type="excel" onClick={onDownloadExcel} />
             <DownloadButton type="pdf" onClick={onDownloadPdf} />
+            <DownloadButton type="json" onClick={onDownloadJson} />
             <Button variant="secondary" onClick={onReset}>
               Procesar más archivos
             </Button>

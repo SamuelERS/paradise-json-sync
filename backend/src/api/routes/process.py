@@ -57,6 +57,7 @@ async def process_job_task(
     try:
         files = await file_service.get_files(upload_id)
         invoices = []
+        validation_errors: list[dict[str, str | list[str]]] = []
 
         json_processor = JSONProcessor()
         validator = DataValidator()
@@ -77,19 +78,30 @@ async def process_job_task(
                     if is_valid:
                         invoices.append(invoice)
                     else:
+                        validation_errors.append({
+                            "file": file_info["name"],
+                            "errors": errors,
+                        })
                         logger.warning(
                             "Invoice validation failed for %s: %s",
                             file_info["name"],
                             errors,
                         )
                 except Exception as e:
+                    validation_errors.append({
+                        "file": file_info["name"],
+                        "errors": [str(e)],
+                    })
                     logger.warning("Error processing %s: %s", file_info["name"], e)
 
         if not invoices:
-            await job_service.fail_job(
-                job_id,
-                "No valid invoices found / No se encontraron facturas válidas",
-            )
+            # Build detailed error message
+            error_details = "; ".join([
+                f"{e['file']}: {', '.join(str(err) for err in e['errors'][:2])}"
+                for e in validation_errors[:3]
+            ])
+            error_msg = f"No valid invoices found / No se encontraron facturas válidas. Errors: {error_details[:300]}"
+            await job_service.fail_job(job_id, error_msg)
             return
 
         # Export

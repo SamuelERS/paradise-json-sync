@@ -54,6 +54,15 @@ class InvoiceItem(BaseModel):
         unit_price: Price per unit / Precio por unidad
         total: Total for this item (quantity * unit_price)
                Total del ítem (cantidad * precio_unitario)
+        item_number: Item sequence number / Número de secuencia del ítem
+        product_code: Product code / Código del producto
+        unit_measure: Unit of measure code / Código de unidad de medida
+        original_price: Original price before adjustments / Precio original
+        discount: Discount amount / Monto de descuento
+        item_tax: Tax amount for this item / IVA del ítem
+        non_subject_sale: Non-subject sale amount / Venta no sujeta
+        exempt_sale: Exempt sale amount / Venta exenta
+        taxable_sale: Taxable sale amount / Venta gravada
     """
 
     quantity: Decimal = Field(
@@ -76,6 +85,50 @@ class InvoiceItem(BaseModel):
         ...,
         ge=0,
         description="Total for this item / Total del ítem",
+    )
+    # DTE-specific fields / Campos específicos de DTE
+    item_number: Optional[int] = Field(
+        default=None,
+        description="Item sequence number / Número de ítem (numItem)",
+    )
+    product_code: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Product code / Código del producto (codigo)",
+    )
+    unit_measure: Optional[int] = Field(
+        default=None,
+        description="Unit of measure code / Unidad de medida (uniMedida)",
+    )
+    original_price: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description="Original unit price / Precio unitario original (precioUni)",
+    )
+    discount: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Discount amount / Descuento (montoDescu)",
+    )
+    item_tax: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Tax for this item / IVA del ítem (ivaItem)",
+    )
+    non_subject_sale: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Non-subject sale amount / Venta no sujeta (ventaNoSuj)",
+    )
+    exempt_sale: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Exempt sale amount / Venta exenta (ventaExenta)",
+    )
+    taxable_sale: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Taxable sale amount / Venta gravada (ventaGravada)",
     )
 
     @model_validator(mode="after")
@@ -108,6 +161,9 @@ class Invoice(BaseModel):
     Represents a full invoice with header information and line items.
     Representa una factura completa con información de encabezado e ítems.
 
+    Includes full DTE (Documento Tributario Electrónico) support for
+    El Salvador electronic invoicing standard.
+
     Attributes / Atributos:
         document_number: Unique invoice number / Número único de factura
         invoice_type: Type of invoice / Tipo de factura
@@ -121,11 +177,12 @@ class Invoice(BaseModel):
         source_file: Original source file path / Ruta del archivo fuente
     """
 
+    # === Core fields / Campos principales ===
     document_number: str = Field(
         ...,
         min_length=1,
         max_length=50,
-        description="Unique document number / Número único de documento",
+        description="Unique document number / Número único de documento (codigoGeneracion)",
     )
     invoice_type: InvoiceType = Field(
         default=InvoiceType.FACTURA,
@@ -144,7 +201,7 @@ class Invoice(BaseModel):
     customer_id: Optional[str] = Field(
         default=None,
         max_length=50,
-        description="Customer tax ID / Identificación fiscal",
+        description="Customer tax ID / Identificación fiscal (numDocumento)",
     )
     items: list[InvoiceItem] = Field(
         default_factory=list,
@@ -158,16 +215,137 @@ class Invoice(BaseModel):
     tax: Decimal = Field(
         default=Decimal("0"),
         ge=0,
-        description="Tax amount / Monto de impuesto",
+        description="Tax amount / Monto de impuesto (totalIva)",
     )
     total: Decimal = Field(
         ...,
         ge=0,
-        description="Total amount / Monto total",
+        description="Total amount / Monto total (totalPagar)",
     )
     source_file: Optional[str] = Field(
         default=None,
         description="Source file path / Ruta del archivo fuente",
+    )
+
+    # === DTE Identification / Identificación DTE ===
+    control_number: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Official control number / Número de control (numeroControl)",
+    )
+    emission_time: Optional[str] = Field(
+        default=None,
+        max_length=10,
+        description="Emission time / Hora de emisión (horEmi)",
+    )
+    currency: str = Field(
+        default="USD",
+        max_length=5,
+        description="Currency code / Moneda (tipoMoneda)",
+    )
+
+    # === Issuer data / Datos del emisor ===
+    issuer_nit: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="Issuer NIT / NIT del emisor",
+    )
+    issuer_nrc: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="Issuer NRC / NRC del emisor",
+    )
+    issuer_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Issuer legal name / Nombre legal del emisor",
+    )
+    issuer_commercial_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Issuer commercial name / Nombre comercial del emisor",
+    )
+    issuer_address: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Issuer address / Dirección del emisor",
+    )
+
+    # === Customer additional data / Datos adicionales del cliente ===
+    customer_doc_type: Optional[str] = Field(
+        default=None,
+        max_length=10,
+        description="Customer document type / Tipo de documento del cliente (tipoDocumento)",
+    )
+    customer_nrc: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="Customer NRC / NRC del cliente",
+    )
+    customer_address: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Customer address / Dirección del cliente",
+    )
+    customer_phone: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Customer phone / Teléfono del cliente",
+    )
+    customer_email: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        description="Customer email / Correo del cliente",
+    )
+
+    # === Summary fields / Campos de resumen ===
+    total_non_subject: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Total non-subject sales / Total no sujeto (totalNoSuj)",
+    )
+    total_exempt: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Total exempt sales / Total exento (totalExenta)",
+    )
+    total_taxable: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Total taxable sales / Total gravado (totalGravada)",
+    )
+    total_discount: Decimal = Field(
+        default=Decimal("0"),
+        ge=0,
+        description="Total discount / Total descuento (totalDescu)",
+    )
+    total_in_words: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Total amount in words / Total en letras (totalLetras)",
+    )
+    payment_condition: Optional[int] = Field(
+        default=None,
+        description="Payment condition: 1=Cash, 2=Credit / Condición: 1=Contado, 2=Crédito (condicionOperacion)",
+    )
+
+    # === Appendix data / Datos del apéndice ===
+    seller_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Seller name / Nombre del vendedor",
+    )
+    internal_doc_number: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Internal document number / N° de documento interno",
+    )
+
+    # === Tax seal / Sello fiscal ===
+    tax_seal: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        description="Tax authority seal / Sello de Hacienda (SelloRecibido)",
     )
 
     @field_validator("issue_date", mode="before")

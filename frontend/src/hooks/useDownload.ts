@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react';
 import {
   downloadExcel,
   downloadPdf,
+  downloadJson,
   triggerDownload,
   DownloadType,
 } from '../services/downloadService';
@@ -42,6 +43,8 @@ export interface UseDownloadReturn {
   downloadExcelFile: (jobId: string, filename?: string) => Promise<void>;
   /** EN: Download PDF file | ES: Descargar archivo PDF */
   downloadPdfFile: (jobId: string, filename?: string) => Promise<void>;
+  /** EN: Download JSON file | ES: Descargar archivo JSON */
+  downloadJsonFile: (jobId: string, filename?: string) => Promise<void>;
   /** EN: Clear error | ES: Limpiar error */
   clearError: () => void;
   /** EN: Reset state | ES: Reiniciar estado */
@@ -150,6 +153,41 @@ export function useDownload(): UseDownloadReturn {
   );
 
   /**
+   * Download JSON File / Descargar Archivo JSON
+   *
+   * EN: Downloads the consolidated JSON file for a completed job.
+   * ES: Descarga el archivo JSON consolidado para un trabajo completado.
+   */
+  const downloadJsonFile = useCallback(
+    async (jobId: string, filename?: string): Promise<void> => {
+      setState({
+        isDownloading: true,
+        downloadType: 'json',
+        error: null,
+      });
+
+      try {
+        const blob = await downloadJson(jobId);
+        const downloadFilename = filename || `consolidado_${jobId}.json`;
+        triggerDownload(blob, downloadFilename);
+
+        setState((prev) => ({
+          ...prev,
+          isDownloading: false,
+        }));
+      } catch (error) {
+        setState({
+          isDownloading: false,
+          downloadType: 'json',
+          error: formatErrorMessage(error),
+        });
+        throw error;
+      }
+    },
+    []
+  );
+
+  /**
    * Clear Error / Limpiar Error
    *
    * EN: Clears the error state.
@@ -178,6 +216,7 @@ export function useDownload(): UseDownloadReturn {
     error: state.error,
     downloadExcelFile,
     downloadPdfFile,
+    downloadJsonFile,
     clearError,
     reset,
   };

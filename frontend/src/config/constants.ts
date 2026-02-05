@@ -11,10 +11,12 @@
  * API Base URL / URL Base de la API
  *
  * EN: The base URL for all API requests. Uses environment variable if available.
+ *     Empty string uses Vite proxy in development.
  * ES: La URL base para todas las peticiones API. Usa variable de entorno si está disponible.
+ *     String vacío usa proxy de Vite en desarrollo.
  */
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  import.meta.env.VITE_API_URL || '';
 
 /**
  * API Timeout / Tiempo de espera de la API
@@ -60,6 +62,7 @@ export const API_ENDPOINTS = {
   STATUS: '/api/status',
   DOWNLOAD_EXCEL: '/api/download/excel',
   DOWNLOAD_PDF: '/api/download/pdf',
+  DOWNLOAD_JSON: '/api/download/json',
 } as const;
 
 /**

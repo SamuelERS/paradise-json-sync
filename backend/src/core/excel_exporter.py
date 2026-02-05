@@ -66,14 +66,34 @@ class ExcelExporter:
 
     # Column headers / Encabezados de columna
     HEADERS = [
-        "Document Number / Número",
+        "N° Control",
+        "N° Documento Interno",
+        "Document Number / Código Gen.",
         "Type / Tipo",
         "Issue Date / Fecha",
+        "Emission Time / Hora",
+        "Payment / Condición",
+        "Seller / Vendedor",
         "Customer Name / Cliente",
         "Customer ID / NIT",
+        "Customer Doc Type / Tipo Doc",
+        "Customer NRC",
+        "Customer Address / Dirección",
+        "Customer Phone / Teléfono",
+        "Customer Email / Correo",
+        "Issuer Name / Emisor",
+        "Issuer NIT",
+        "Issuer NRC",
+        "Total Taxable / Gravado",
+        "Total Exempt / Exento",
+        "Total Non-Subject / No Sujeto",
+        "Total Discount / Descuento",
         "Subtotal",
-        "Tax / Impuesto",
+        "Tax / IVA",
         "Total",
+        "Total in Words / Letras",
+        "Currency / Moneda",
+        "Tax Seal / Sello",
         "Source File / Archivo",
     ]
 
@@ -244,8 +264,8 @@ class ExcelExporter:
         invoices: list[Invoice],
     ) -> None:
         """
-        Create the main invoices data sheet.
-        Crea la hoja principal de datos de facturas.
+        Create the main invoices data sheet with ALL DTE fields.
+        Crea la hoja principal de datos de facturas con TODOS los campos DTE.
         """
         sheet = workbook.active
         sheet.title = "Invoices - Facturas"
@@ -255,21 +275,50 @@ class ExcelExporter:
             cell = sheet.cell(row=1, column=col, value=header)
             self._style_header_cell(cell)
 
-        # Write invoice data
-        for row_num, invoice in enumerate(invoices, start=2):
-            sheet.cell(row=row_num, column=1, value=invoice.document_number)
-            sheet.cell(row=row_num, column=2, value=invoice.invoice_type.value)
-            sheet.cell(row=row_num, column=3, value=invoice.issue_date.isoformat())
-            sheet.cell(row=row_num, column=4, value=invoice.customer_name)
-            sheet.cell(row=row_num, column=5, value=invoice.customer_id or "")
-            sheet.cell(row=row_num, column=6, value=float(invoice.subtotal))
-            sheet.cell(row=row_num, column=7, value=float(invoice.tax))
-            sheet.cell(row=row_num, column=8, value=float(invoice.total))
-            sheet.cell(row=row_num, column=9, value=invoice.source_file or "")
+        # Map payment condition to readable text
+        def payment_text(condition: Optional[int]) -> str:
+            if condition == 1:
+                return "CONTADO"
+            elif condition == 2:
+                return "CRÉDITO"
+            return ""
 
-            # Apply currency format to numeric cells
-            for col in [6, 7, 8]:
-                cell = sheet.cell(row=row_num, column=col)
+        # Write invoice data with ALL fields
+        for row_num, invoice in enumerate(invoices, start=2):
+            col = 1
+            sheet.cell(row=row_num, column=col, value=invoice.control_number or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.internal_doc_number or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.document_number); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.invoice_type.value); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.issue_date.isoformat()); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.emission_time or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=payment_text(invoice.payment_condition)); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.seller_name or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_name); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_id or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_doc_type or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_nrc or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_address or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_phone or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.customer_email or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.issuer_name or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.issuer_nit or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.issuer_nrc or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.total_taxable)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.total_exempt)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.total_non_subject)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.total_discount)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.subtotal)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.tax)); col += 1
+            sheet.cell(row=row_num, column=col, value=float(invoice.total)); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.total_in_words or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.currency); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.tax_seal or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=invoice.source_file or "")
+
+            # Apply currency format to numeric cells (columns 19-25)
+            for currency_col in [19, 20, 21, 22, 23, 24, 25]:
+                cell = sheet.cell(row=row_num, column=currency_col)
                 cell.number_format = f"{self.currency_symbol}#,##0.00"
 
         # Auto-adjust column widths
@@ -283,17 +332,26 @@ class ExcelExporter:
         invoices: list[Invoice],
     ) -> None:
         """
-        Create a detailed items sheet.
-        Crea una hoja de ítems detallados.
+        Create a detailed items sheet with ALL DTE fields.
+        Crea una hoja de ítems detallados con TODOS los campos DTE.
         """
         sheet = workbook.create_sheet(title="Items - Items")
 
         item_headers = [
             "Invoice / Factura",
+            "N° Control",
             "Item # / Ítem #",
+            "Product Code / Código",
             "Description / Descripción",
+            "Unit Measure / Unidad",
             "Quantity / Cantidad",
+            "Original Price / Precio Orig.",
             "Unit Price / Precio Unit.",
+            "Discount / Descuento",
+            "Taxable / Gravada",
+            "Exempt / Exenta",
+            "Non-Subject / No Sujeta",
+            "Item Tax / IVA Ítem",
             "Total",
         ]
 
@@ -302,27 +360,38 @@ class ExcelExporter:
             cell = sheet.cell(row=1, column=col, value=header)
             self._style_header_cell(cell)
 
-        # Write item data
+        # Write item data with ALL DTE fields
         row_num = 2
         for invoice in invoices:
-            for item_num, item in enumerate(invoice.items, start=1):
-                sheet.cell(row=row_num, column=1, value=invoice.document_number)
-                sheet.cell(row=row_num, column=2, value=item_num)
-                sheet.cell(row=row_num, column=3, value=item.description)
-                sheet.cell(row=row_num, column=4, value=float(item.quantity))
-                sheet.cell(row=row_num, column=5, value=float(item.unit_price))
-                sheet.cell(row=row_num, column=6, value=float(item.total))
+            for idx, item in enumerate(invoice.items, start=1):
+                col = 1
+                sheet.cell(row=row_num, column=col, value=invoice.document_number); col += 1
+                sheet.cell(row=row_num, column=col, value=invoice.control_number or ""); col += 1
+                sheet.cell(row=row_num, column=col, value=item.item_number or idx); col += 1
+                sheet.cell(row=row_num, column=col, value=item.product_code or ""); col += 1
+                sheet.cell(row=row_num, column=col, value=item.description); col += 1
+                sheet.cell(row=row_num, column=col, value=item.unit_measure or ""); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.quantity)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.original_price) if item.original_price else ""); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.unit_price)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.discount)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.taxable_sale)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.exempt_sale)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.non_subject_sale)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.item_tax)); col += 1
+                sheet.cell(row=row_num, column=col, value=float(item.total))
 
-                # Apply currency format
-                for col in [5, 6]:
-                    cell = sheet.cell(row=row_num, column=col)
-                    cell.number_format = f"{self.currency_symbol}#,##0.00"
+                # Apply currency format to money columns (8-15)
+                for currency_col in [8, 9, 10, 11, 12, 13, 14, 15]:
+                    cell = sheet.cell(row=row_num, column=currency_col)
+                    if cell.value != "":
+                        cell.number_format = f"{self.currency_symbol}#,##0.00"
 
                 row_num += 1
 
         self._auto_adjust_columns(sheet)
 
-        logger.debug("Created items sheet")
+        logger.debug("Created items sheet with ALL DTE fields")
 
     def _style_header_cell(self, cell) -> None:
         """
@@ -388,8 +457,8 @@ class ExcelExporter:
         delimiter: str = ",",
     ) -> str:
         """
-        Export invoices to CSV format.
-        Exporta facturas a formato CSV.
+        Export invoices to CSV format with ALL DTE fields.
+        Exporta facturas a formato CSV con TODOS los campos DTE.
 
         Args / Argumentos:
             invoices: List of invoices to export / Lista de facturas a exportar
@@ -411,6 +480,13 @@ class ExcelExporter:
 
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
+        def payment_text(condition: Optional[int]) -> str:
+            if condition == 1:
+                return "CONTADO"
+            elif condition == 2:
+                return "CRÉDITO"
+            return ""
+
         with open(output_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
 
@@ -419,14 +495,34 @@ class ExcelExporter:
 
             for invoice in invoices:
                 writer.writerow([
+                    invoice.control_number or "",
+                    invoice.internal_doc_number or "",
                     invoice.document_number,
                     invoice.invoice_type.value,
                     invoice.issue_date.isoformat(),
+                    invoice.emission_time or "",
+                    payment_text(invoice.payment_condition),
+                    invoice.seller_name or "",
                     invoice.customer_name,
                     invoice.customer_id or "",
+                    invoice.customer_doc_type or "",
+                    invoice.customer_nrc or "",
+                    invoice.customer_address or "",
+                    invoice.customer_phone or "",
+                    invoice.customer_email or "",
+                    invoice.issuer_name or "",
+                    invoice.issuer_nit or "",
+                    invoice.issuer_nrc or "",
+                    float(invoice.total_taxable),
+                    float(invoice.total_exempt),
+                    float(invoice.total_non_subject),
+                    float(invoice.total_discount),
                     float(invoice.subtotal),
                     float(invoice.tax),
                     float(invoice.total),
+                    invoice.total_in_words or "",
+                    invoice.currency,
+                    invoice.tax_seal or "",
                     invoice.source_file or "",
                 ])
 
@@ -441,8 +537,8 @@ class ExcelExporter:
         include_metadata: bool = True,
     ) -> str:
         """
-        Export invoices to JSON format.
-        Exporta facturas a formato JSON.
+        Export invoices to JSON format with ALL DTE fields.
+        Exporta facturas a formato JSON con TODOS los campos DTE.
 
         Args / Argumentos:
             invoices: List of invoices to export / Lista de facturas a exportar
@@ -467,27 +563,73 @@ class ExcelExporter:
 
         def invoice_to_dict(inv: Invoice) -> dict:
             return {
+                # Core identification / Identificación
                 "document_number": inv.document_number,
+                "control_number": inv.control_number or "",
+                "internal_doc_number": inv.internal_doc_number or "",
                 "type": inv.invoice_type.value,
                 "issue_date": inv.issue_date.isoformat(),
+                "emission_time": inv.emission_time or "",
+                "currency": inv.currency,
+
+                # Issuer / Emisor
+                "issuer": {
+                    "name": inv.issuer_name or "",
+                    "commercial_name": inv.issuer_commercial_name or "",
+                    "nit": inv.issuer_nit or "",
+                    "nrc": inv.issuer_nrc or "",
+                    "address": inv.issuer_address or "",
+                },
+
+                # Customer / Cliente
                 "customer": {
                     "name": inv.customer_name,
                     "id": inv.customer_id or "",
+                    "doc_type": inv.customer_doc_type or "",
+                    "nrc": inv.customer_nrc or "",
+                    "address": inv.customer_address or "",
+                    "phone": inv.customer_phone or "",
+                    "email": inv.customer_email or "",
                 },
+
+                # Amounts / Montos
                 "amounts": {
                     "subtotal": float(inv.subtotal),
                     "tax": float(inv.tax),
                     "total": float(inv.total),
+                    "total_taxable": float(inv.total_taxable),
+                    "total_exempt": float(inv.total_exempt),
+                    "total_non_subject": float(inv.total_non_subject),
+                    "total_discount": float(inv.total_discount),
+                    "total_in_words": inv.total_in_words or "",
                 },
+
+                # Payment / Pago
+                "payment_condition": inv.payment_condition,
+                "seller_name": inv.seller_name or "",
+
+                # Items / Ítems
                 "items": [
                     {
+                        "item_number": item.item_number,
+                        "product_code": item.product_code or "",
                         "description": item.description,
+                        "unit_measure": item.unit_measure,
                         "quantity": float(item.quantity),
+                        "original_price": float(item.original_price) if item.original_price else None,
                         "unit_price": float(item.unit_price),
+                        "discount": float(item.discount),
+                        "taxable_sale": float(item.taxable_sale),
+                        "exempt_sale": float(item.exempt_sale),
+                        "non_subject_sale": float(item.non_subject_sale),
+                        "item_tax": float(item.item_tax),
                         "total": float(item.total),
                     }
                     for item in inv.items
                 ],
+
+                # Tax seal / Sello fiscal
+                "tax_seal": inv.tax_seal or "",
                 "source_file": inv.source_file or "",
             }
 
@@ -518,8 +660,8 @@ class ExcelExporter:
         title: str = "Invoice Report / Reporte de Facturas",
     ) -> str:
         """
-        Export invoices to PDF format.
-        Exporta facturas a formato PDF.
+        Export invoices to PDF format with one invoice per page.
+        Exporta facturas a formato PDF con una factura por página.
 
         Args / Argumentos:
             invoices: List of invoices to export / Lista de facturas a exportar
@@ -531,10 +673,11 @@ class ExcelExporter:
             Path to created file / Ruta al archivo creado
         """
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import landscape, letter
+        from reportlab.lib.pagesizes import letter
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import inch
         from reportlab.platypus import (
+            PageBreak,
             Paragraph,
             SimpleDocTemplate,
             Spacer,
@@ -553,7 +696,7 @@ class ExcelExporter:
 
         doc = SimpleDocTemplate(
             str(output_file),
-            pagesize=landscape(letter),
+            pagesize=letter,
             rightMargin=0.5 * inch,
             leftMargin=0.5 * inch,
             topMargin=0.5 * inch,
@@ -563,69 +706,246 @@ class ExcelExporter:
         elements = []
         styles = getSampleStyleSheet()
 
-        # Title
+        # Custom styles
         title_style = ParagraphStyle(
             "CustomTitle",
             parent=styles["Heading1"],
-            fontSize=16,
+            fontSize=18,
             spaceAfter=20,
+            alignment=1,  # Center
         )
-        elements.append(Paragraph(title, title_style))
+        section_style = ParagraphStyle(
+            "SectionHeader",
+            parent=styles["Heading2"],
+            fontSize=12,
+            spaceBefore=10,
+            spaceAfter=5,
+            textColor=colors.HexColor("#4472C4"),
+        )
+        label_style = ParagraphStyle(
+            "Label",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=colors.grey,
+        )
 
-        # Summary
+        # Map payment condition to readable text
+        def payment_text(condition: Optional[int]) -> str:
+            if condition == 1:
+                return "CONTADO"
+            elif condition == 2:
+                return "CRÉDITO"
+            return "-"
+
+        # ========== SUMMARY PAGE ==========
+        elements.append(Paragraph(title, title_style))
+        elements.append(Spacer(1, 20))
+
         if include_summary:
             total_amount = sum(float(inv.total) for inv in invoices)
+            total_taxable = sum(float(inv.total_taxable) for inv in invoices)
+            total_exempt = sum(float(inv.total_exempt) for inv in invoices)
+            total_tax = sum(float(inv.tax) for inv in invoices)
+
+            # Summary table
             summary_data = [
-                ["Total Invoices / Total Facturas", str(len(invoices))],
-                [
-                    "Total Amount / Monto Total",
-                    f"{self.currency_symbol}{total_amount:,.2f}",
-                ],
+                ["RESUMEN GENERAL", ""],
+                ["Total de Facturas", str(len(invoices))],
+                ["Total Gravado", f"{self.currency_symbol}{total_taxable:,.2f}"],
+                ["Total Exento", f"{self.currency_symbol}{total_exempt:,.2f}"],
+                ["Total IVA", f"{self.currency_symbol}{total_tax:,.2f}"],
+                ["TOTAL GENERAL", f"{self.currency_symbol}{total_amount:,.2f}"],
             ]
-            summary_table = Table(summary_data, colWidths=[3 * inch, 2 * inch])
-            summary_table.setStyle(
-                TableStyle([
-                    ("BACKGROUND", (0, 0), (0, -1), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 10),
-                    ("PADDING", (0, 0), (-1, -1), 6),
-                ])
-            )
-            elements.append(summary_table)
-            elements.append(Spacer(1, 20))
-
-        # Invoice table
-        headers = ["#", "Date", "Customer", "Type", "Subtotal", "Tax", "Total"]
-        table_data = [headers]
-
-        for inv in invoices:
-            table_data.append([
-                inv.document_number,
-                inv.issue_date.isoformat(),
-                inv.customer_name[:30],  # Truncate long names
-                inv.invoice_type.value,
-                f"{self.currency_symbol}{float(inv.subtotal):,.2f}",
-                f"{self.currency_symbol}{float(inv.tax):,.2f}",
-                f"{self.currency_symbol}{float(inv.total):,.2f}",
-            ])
-
-        table = Table(table_data, repeatRows=1)
-        table.setStyle(
-            TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            summary_table = Table(summary_data, colWidths=[3.5 * inch, 2.5 * inch])
+            summary_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ("FONTSIZE", (0, 0), (-1, 0), 12),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FE")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#CCCCCC")),
+                ("FONTSIZE", (0, 1), (-1, -1), 10),
+                ("PADDING", (0, 0), (-1, -1), 8),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ]))
+            elements.append(summary_table)
+            elements.append(Spacer(1, 30))
+
+            # Invoice list table (compact overview)
+            list_headers = ["#", "Fecha", "Cliente", "Tipo", "Total"]
+            list_data = [list_headers]
+            for i, inv in enumerate(invoices, 1):
+                list_data.append([
+                    str(i),
+                    inv.issue_date.strftime("%Y-%m-%d"),
+                    (inv.customer_name or "-")[:35],
+                    inv.invoice_type.value,
+                    f"{self.currency_symbol}{float(inv.total):,.2f}",
+                ])
+
+            list_table = Table(
+                list_data,
+                colWidths=[0.4 * inch, 1 * inch, 3 * inch, 1 * inch, 1.2 * inch]
+            )
+            list_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
                 ("FONTSIZE", (0, 1), (-1, -1), 8),
-                ("ALIGN", (4, 1), (-1, -1), "RIGHT"),  # Align amounts right
-            ])
-        )
-        elements.append(table)
+                ("PADDING", (0, 0), (-1, -1), 5),
+                ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F5F5F5")]),
+            ]))
+            elements.append(Paragraph("Listado de Facturas", section_style))
+            elements.append(list_table)
+
+        # ========== INDIVIDUAL INVOICE PAGES ==========
+        for idx, inv in enumerate(invoices):
+            elements.append(PageBreak())
+
+            # Invoice header
+            header_text = f"FACTURA {idx + 1} de {len(invoices)}"
+            elements.append(Paragraph(header_text, title_style))
+
+            # Document identification
+            elements.append(Paragraph("IDENTIFICACIÓN DEL DOCUMENTO", section_style))
+            id_data = [
+                ["Código de Generación", inv.document_number or "-"],
+                ["N° de Control", inv.control_number or "-"],
+                ["N° Documento Interno", inv.internal_doc_number or "-"],
+                ["Tipo de Documento", inv.invoice_type.value],
+                ["Fecha de Emisión", inv.issue_date.strftime("%Y-%m-%d")],
+                ["Hora de Emisión", inv.emission_time or "-"],
+                ["Condición de Pago", payment_text(inv.payment_condition)],
+                ["Moneda", inv.currency or "USD"],
+            ]
+            id_table = Table(id_data, colWidths=[2.5 * inch, 4.5 * inch])
+            id_table.setStyle(TableStyle([
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F0F0F0")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("PADDING", (0, 0), (-1, -1), 6),
+            ]))
+            elements.append(id_table)
+            elements.append(Spacer(1, 15))
+
+            # Issuer and Customer side by side
+            elements.append(Paragraph("EMISOR Y RECEPTOR", section_style))
+
+            issuer_data = [
+                ["EMISOR", ""],
+                ["Nombre", inv.issuer_name or "-"],
+                ["NIT", inv.issuer_nit or "-"],
+                ["NRC", inv.issuer_nrc or "-"],
+            ]
+            customer_data = [
+                ["CLIENTE / RECEPTOR", ""],
+                ["Nombre", inv.customer_name or "-"],
+                ["NIT / DUI", inv.customer_id or "-"],
+                ["Tipo Documento", inv.customer_doc_type or "-"],
+                ["NRC", inv.customer_nrc or "-"],
+                ["Dirección", (inv.customer_address or "-")[:50]],
+                ["Teléfono", inv.customer_phone or "-"],
+                ["Correo", inv.customer_email or "-"],
+            ]
+
+            issuer_table = Table(issuer_data, colWidths=[1.2 * inch, 2.2 * inch])
+            issuer_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("SPAN", (0, 0), (-1, 0)),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]))
+
+            customer_table = Table(customer_data, colWidths=[1.2 * inch, 2.2 * inch])
+            customer_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("SPAN", (0, 0), (-1, 0)),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]))
+
+            parties_table = Table(
+                [[issuer_table, customer_table]],
+                colWidths=[3.5 * inch, 3.5 * inch]
+            )
+            parties_table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]))
+            elements.append(parties_table)
+            elements.append(Spacer(1, 15))
+
+            # Amounts section
+            elements.append(Paragraph("MONTOS", section_style))
+            amounts_data = [
+                ["Concepto", "Valor"],
+                ["Total Gravado", f"{self.currency_symbol}{float(inv.total_taxable):,.2f}"],
+                ["Total Exento", f"{self.currency_symbol}{float(inv.total_exempt):,.2f}"],
+                ["Total No Sujeto", f"{self.currency_symbol}{float(inv.total_non_subject):,.2f}"],
+                ["Descuento", f"{self.currency_symbol}{float(inv.total_discount):,.2f}"],
+                ["Subtotal", f"{self.currency_symbol}{float(inv.subtotal):,.2f}"],
+                ["IVA", f"{self.currency_symbol}{float(inv.tax):,.2f}"],
+                ["TOTAL", f"{self.currency_symbol}{float(inv.total):,.2f}"],
+            ]
+            amounts_table = Table(amounts_data, colWidths=[3 * inch, 2 * inch])
+            amounts_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FE")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, -1), (-1, -1), 11),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("FONTSIZE", (0, 0), (-1, -2), 9),
+                ("PADDING", (0, 0), (-1, -1), 6),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ]))
+            elements.append(amounts_table)
+            elements.append(Spacer(1, 10))
+
+            # Total in words
+            if inv.total_in_words:
+                words_data = [["Total en Letras", inv.total_in_words]]
+                words_table = Table(words_data, colWidths=[1.5 * inch, 5.5 * inch])
+                words_table.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#F0F0F0")),
+                    ("FONTNAME", (0, 0), (0, 0), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8),
+                    ("PADDING", (0, 0), (-1, -1), 5),
+                ]))
+                elements.append(words_table)
+                elements.append(Spacer(1, 10))
+
+            # Additional info
+            elements.append(Paragraph("INFORMACIÓN ADICIONAL", section_style))
+            extra_data = [
+                ["Vendedor", inv.seller_name or "-"],
+                ["Sello de Recepción", (inv.tax_seal or "-")[:60]],
+                ["Archivo Origen", inv.source_file or "-"],
+            ]
+            extra_table = Table(extra_data, colWidths=[2 * inch, 5 * inch])
+            extra_table.setStyle(TableStyle([
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F0F0F0")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]))
+            elements.append(extra_table)
 
         doc.build(elements)
         logger.info("Exported %d invoices to PDF: %s", len(invoices), output_file)

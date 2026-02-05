@@ -13,7 +13,7 @@ import { API_ENDPOINTS } from '../config/constants';
  * EN: Available download formats.
  * ES: Formatos de descarga disponibles.
  */
-export type DownloadType = 'excel' | 'pdf';
+export type DownloadType = 'excel' | 'pdf' | 'json';
 
 /**
  * Download Excel / Descargar Excel
@@ -48,6 +48,26 @@ export async function downloadExcel(jobId: string): Promise<Blob> {
 export async function downloadPdf(jobId: string): Promise<Blob> {
   const response = await api.get(
     `${API_ENDPOINTS.DOWNLOAD_PDF}/${jobId}`,
+    {
+      responseType: 'blob',
+    }
+  );
+  return response.data;
+}
+
+/**
+ * Download JSON / Descargar JSON
+ *
+ * EN: Downloads the consolidated JSON file for a completed job.
+ * ES: Descarga el archivo JSON consolidado para un trabajo completado.
+ *
+ * @param jobId - Job identifier / Identificador del trabajo
+ * @returns Promise with file Blob / Promesa con Blob del archivo
+ * @throws Error if download fails / Error si falla la descarga
+ */
+export async function downloadJson(jobId: string): Promise<Blob> {
+  const response = await api.get(
+    `${API_ENDPOINTS.DOWNLOAD_JSON}/${jobId}`,
     {
       responseType: 'blob',
     }
@@ -103,13 +123,25 @@ export async function downloadFile(
   type: DownloadType,
   customFilename?: string
 ): Promise<void> {
-  const blob = type === 'excel'
-    ? await downloadExcel(jobId)
-    : await downloadPdf(jobId);
+  let blob: Blob;
+  let extension: string;
 
-  const extension = type === 'excel' ? 'xlsx' : 'pdf';
+  switch (type) {
+    case 'excel':
+      blob = await downloadExcel(jobId);
+      extension = 'xlsx';
+      break;
+    case 'pdf':
+      blob = await downloadPdf(jobId);
+      extension = 'pdf';
+      break;
+    case 'json':
+      blob = await downloadJson(jobId);
+      extension = 'json';
+      break;
+  }
+
   const filename = customFilename || `consolidado_${jobId}.${extension}`;
-
   triggerDownload(blob, filename);
 }
 
@@ -124,9 +156,18 @@ export async function downloadFile(
  * @returns Download URL / URL de descarga
  */
 export function getDownloadUrl(jobId: string, type: DownloadType): string {
-  const endpoint = type === 'excel'
-    ? API_ENDPOINTS.DOWNLOAD_EXCEL
-    : API_ENDPOINTS.DOWNLOAD_PDF;
+  let endpoint: string;
+  switch (type) {
+    case 'excel':
+      endpoint = API_ENDPOINTS.DOWNLOAD_EXCEL;
+      break;
+    case 'pdf':
+      endpoint = API_ENDPOINTS.DOWNLOAD_PDF;
+      break;
+    case 'json':
+      endpoint = API_ENDPOINTS.DOWNLOAD_JSON;
+      break;
+  }
   return `${endpoint}/${jobId}`;
 }
 
@@ -140,7 +181,12 @@ export function getDownloadUrl(jobId: string, type: DownloadType): string {
  * @returns MIME type string / Cadena de tipo MIME
  */
 export function getFileMimeType(type: DownloadType): string {
-  return type === 'excel'
-    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    : 'application/pdf';
+  switch (type) {
+    case 'excel':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'pdf':
+      return 'application/pdf';
+    case 'json':
+      return 'application/json';
+  }
 }

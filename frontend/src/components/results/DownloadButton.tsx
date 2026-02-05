@@ -7,7 +7,7 @@
 
 interface DownloadButtonProps {
   /** Download type / Tipo de descarga */
-  type: 'excel' | 'pdf';
+  type: 'excel' | 'pdf' | 'json';
   /** Disabled state / Estado deshabilitado */
   disabled?: boolean;
   /** Click handler / Manejador de click */
@@ -26,6 +26,12 @@ const typeConfig = {
     label: 'Descargar PDF',
     bg: 'bg-red-600 hover:bg-red-700',
     ring: 'focus:ring-red-500',
+  },
+  json: {
+    icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+    label: 'Descargar JSON',
+    bg: 'bg-blue-600 hover:bg-blue-700',
+    ring: 'focus:ring-blue-500',
   },
 };
 

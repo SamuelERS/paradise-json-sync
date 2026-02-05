@@ -46,6 +46,7 @@ export function HomePage() {
   const {
     downloadExcelFile,
     downloadPdfFile,
+    downloadJsonFile,
     error: downloadError,
   } = useDownload();
 
@@ -155,6 +156,18 @@ export function HomePage() {
     }
   }, [jobId, downloadPdfFile]);
 
+  const handleDownloadJson = useCallback(async () => {
+    if (!jobId) {
+      setError('No hay resultados para descargar.');
+      return;
+    }
+    try {
+      await downloadJsonFile(jobId, `consolidado_${jobId}.json`);
+    } catch {
+      setError('Error al descargar el archivo JSON.');
+    }
+  }, [jobId, downloadJsonFile]);
+
   const handleReset = useCallback(() => {
     setAppStatus('idle');
     clearFiles();
@@ -231,6 +244,7 @@ export function HomePage() {
               results={results}
               onDownloadExcel={handleDownloadExcel}
               onDownloadPdf={handleDownloadPdf}
+              onDownloadJson={handleDownloadJson}
               onReset={handleReset}
             />
           )}
