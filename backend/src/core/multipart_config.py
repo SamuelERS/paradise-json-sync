@@ -60,15 +60,22 @@ def _patched_request_init(self, *args, **kwargs):
     self.form = custom_form  # type: ignore
 
 
+_PATCH_APPLIED = False
+
+
 def apply_multipart_patch():
     """
-    Apply the multipart patch to Starlette's Request class.
+    Apply the multipart patch to Starlette's Request class (idempotent).
     This must be called before creating the FastAPI app.
 
-    Aplicar el parche multipart a la clase Request de Starlette.
+    Aplicar el parche multipart a la clase Request de Starlette (idempotente).
     Esto debe llamarse antes de crear la app de FastAPI.
     """
+    global _PATCH_APPLIED
+    if _PATCH_APPLIED:
+        return
     starlette_requests.Request.__init__ = _patched_request_init
+    _PATCH_APPLIED = True
 
 
 def get_max_upload_files() -> int:

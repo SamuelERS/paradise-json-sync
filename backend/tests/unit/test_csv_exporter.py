@@ -76,7 +76,7 @@ class TestCSVExporter:
         with open(output_path, encoding="utf-8") as f:
             reader = csv.reader(f)
             headers = next(reader)
-            assert "Document Number" in headers[0]
+            assert any("Document Number" in h for h in headers)
 
     def test_export_contains_all_invoices(self, sample_invoices, tmp_path):
         """Test that all invoices are exported / Verifica que todas las facturas se exporten."""

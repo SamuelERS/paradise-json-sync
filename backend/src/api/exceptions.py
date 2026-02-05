@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.formparsers import MultiPartException
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,21 @@ class TooManyFilesError(APIException):
         )
 
 
+def _too_many_files_response(message: str) -> JSONResponse:
+    """
+    Create standardized response for too many files error.
+    Crea respuesta estandarizada para error de demasiados archivos.
+    """
+    return JSONResponse(
+        status_code=400,
+        content={
+            "success": False,
+            "error": "TOO_MANY_FILES",
+            "message": message,
+        },
+    )
+
+
 def setup_exception_handlers(app: FastAPI) -> None:
     """
     Setup exception handlers for the FastAPI app.
@@ -150,14 +166,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
         # Convert "Too many files" error to our custom format
         # Convertir error "Too many files" a nuestro formato personalizado
         if "Too many files" in message:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "success": False,
-                    "error": "TOO_MANY_FILES",
-                    "message": message,
-                },
-            )
+            return _too_many_files_response(message)
 
         return JSONResponse(
             status_code=400,
@@ -186,14 +195,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
         # Convertir el error "Too many files" de Starlette a nuestro formato
         detail_str = str(detail)
         if "Too many files" in detail_str:
-            return JSONResponse(
-                status_code=exc.status_code,
-                content={
-                    "success": False,
-                    "error": "TOO_MANY_FILES",
-                    "message": detail_str,
-                },
-            )
+            return _too_many_files_response(detail_str)
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -201,6 +203,28 @@ def setup_exception_handlers(app: FastAPI) -> None:
                 "success": False,
                 "error": "HTTP_ERROR",
                 "message": detail_str,
+            },
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def starlette_http_exception_handler(
+        request: Request,
+        exc: StarletteHTTPException,
+    ) -> JSONResponse:
+        """
+        Handle Starlette HTTP exceptions (e.g., multipart parsing errors).
+        Maneja excepciones HTTP de Starlette (e.g., errores de parseo multipart).
+        """
+        detail = str(exc.detail) if exc.detail else ""
+        if "Too many files" in detail:
+            return _too_many_files_response(detail)
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "error": "HTTP_ERROR",
+                "message": detail or "HTTP error",
             },
         )
 

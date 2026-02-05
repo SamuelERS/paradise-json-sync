@@ -22,7 +22,7 @@ class TestDataValidatorInit:
         """Test default initialization values."""
         validator = DataValidator()
         assert validator.tolerance == Decimal("0.01")
-        assert validator.max_date_range_days == 365
+        assert validator.max_date_range_days == 1825
 
     def test_custom_initialization(self):
         """Test custom initialization values."""

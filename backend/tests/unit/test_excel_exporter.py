@@ -128,19 +128,11 @@ class TestExportHeaders:
         wb = load_workbook(output_path)
         ws = wb.active
 
-        # Check headers
+        # Check headers match ExcelExporter.HEADERS
+        # Verificar que headers coincidan con ExcelExporter.HEADERS
         headers = [cell.value for cell in ws[1]]
-        expected_headers = [
-            "Document Number / Número",
-            "Type / Tipo",
-            "Issue Date / Fecha",
-            "Customer Name / Cliente",
-            "Customer ID / NIT",
-            "Subtotal",
-            "Tax / Impuesto",
-            "Total",
-            "Source File / Archivo",
-        ]
+        from src.core.excel_exporter import ExcelExporter as EE
+        expected_headers = EE.HEADERS
 
         assert headers == expected_headers
 

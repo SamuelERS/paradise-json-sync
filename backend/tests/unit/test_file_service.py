@@ -21,10 +21,9 @@ class TestFileServiceInit:
 
     def test_initialization_default_directory(self, tmp_path):
         """Test that FileService initializes with default directory."""
-        with patch("src.services.file_service.UPLOAD_DIR", tmp_path / "uploads"):
-            service = FileService()
-            assert service.upload_dir.exists()
-            assert service._uploads == {}
+        service = FileService(upload_dir=tmp_path / "uploads")
+        assert service.upload_dir.exists()
+        assert service._uploads == {}
 
     def test_initialization_custom_directory(self, tmp_path):
         """Test that FileService initializes with custom directory."""

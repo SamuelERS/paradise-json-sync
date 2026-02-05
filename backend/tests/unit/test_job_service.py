@@ -351,7 +351,7 @@ class TestListJobs:
     @pytest.mark.asyncio
     async def test_list_jobs_empty(self, service):
         """Test listing jobs when none exist."""
-        jobs = service.list_jobs()
+        jobs = await service.list_jobs()
         assert jobs == []
 
     @pytest.mark.asyncio
@@ -360,7 +360,7 @@ class TestListJobs:
         await service.create_job("job-001", "upload-001", "xlsx")
         await service.create_job("job-002", "upload-002", "csv")
 
-        jobs = service.list_jobs()
+        jobs = await service.list_jobs()
         assert len(jobs) == 2
 
     @pytest.mark.asyncio
@@ -370,11 +370,11 @@ class TestListJobs:
         await service.create_job("job-002", "upload-002", "csv")
         await service.update_progress("job-002", 50)  # Changes to "processing"
 
-        pending_jobs = service.list_jobs(status="pending")
+        pending_jobs = await service.list_jobs(status="pending")
         assert len(pending_jobs) == 1
         assert pending_jobs[0]["job_id"] == "job-001"
 
-        processing_jobs = service.list_jobs(status="processing")
+        processing_jobs = await service.list_jobs(status="processing")
         assert len(processing_jobs) == 1
         assert processing_jobs[0]["job_id"] == "job-002"
 
@@ -383,7 +383,7 @@ class TestListJobs:
         """Test listing jobs with no status match."""
         await service.create_job("job-001", "upload-001", "xlsx")
 
-        completed_jobs = service.list_jobs(status="completed")
+        completed_jobs = await service.list_jobs(status="completed")
         assert completed_jobs == []
 
 
@@ -478,6 +478,6 @@ class TestJobLifecycle:
         assert (await service.get_job("job-c"))["status"] == "pending"
 
         # List by status
-        assert len(service.list_jobs(status="completed")) == 1
-        assert len(service.list_jobs(status="failed")) == 1
-        assert len(service.list_jobs(status="pending")) == 1
+        assert len(await service.list_jobs(status="completed")) == 1
+        assert len(await service.list_jobs(status="failed")) == 1
+        assert len(await service.list_jobs(status="pending")) == 1

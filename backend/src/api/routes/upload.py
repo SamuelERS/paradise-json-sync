@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List, Union
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Request, UploadFile
@@ -70,7 +70,8 @@ async def upload_files(
         raise TooManyFilesError(count=len(files), max_files=MAX_FILES)
 
     # Validate and read each file
-    validated_files: List[Dict[str, Any]] = []
+    # Tipo para archivos validados / Validated file type
+    validated_files: List[Dict[str, Union[bytes, str, int]]] = []
     for file in files:
         # Validate extension
         ext = Path(file.filename or "").suffix.lower()
@@ -80,8 +81,10 @@ async def upload_files(
                 allowed=list(ALLOWED_EXTENSIONS),
             )
 
-        # Read and validate size
+        # Read and validate size, then close to free file descriptor
+        # Leer y validar tamano, luego cerrar para liberar descriptor de archivo
         content = await file.read()
+        await file.close()
         if len(content) > MAX_FILE_SIZE:
             raise FileTooLargeError(
                 filename=file.filename or "unknown",
@@ -114,7 +117,6 @@ async def upload_files(
 
         validated_files.append(
             {
-                "file": file,
                 "content": content,
                 "name": file.filename or f"file_{len(validated_files)}",
                 "size": len(content),

@@ -682,13 +682,10 @@ class ExcelExporter:
             "invoices": [invoice_to_dict(inv) for inv in invoices],
         }
 
-        # Remove detailed metadata if not requested, but keep minimal structure
-        # Remover metadata detallada si no se solicita, pero mantener estructura mínima
+        # Remove metadata entirely if not requested
+        # Remover metadata completamente si no se solicita
         if not include_metadata:
-            data["metadata"] = {
-                "total_invoices": len(invoices),
-                "format_version": "1.0",
-            }
+            data.pop("metadata", None)
 
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=indent, ensure_ascii=False)
