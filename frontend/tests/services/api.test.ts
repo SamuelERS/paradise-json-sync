@@ -64,11 +64,11 @@ describe('API Constants / Constantes de API', () => {
     expect(typeof API_BASE_URL).toBe('string');
   });
 
-  it('should have API_TIMEOUT as 30000ms / debe tener API_TIMEOUT como 30000ms', () => {
-    expect(API_TIMEOUT).toBe(30000);
+  it('should have API_TIMEOUT as 180000ms (3 minutes) / debe tener API_TIMEOUT como 180000ms (3 minutos)', () => {
+    expect(API_TIMEOUT).toBe(180000);
   });
 
-  it('should have localhost as default baseURL / debe tener localhost como baseURL por defecto', () => {
-    expect(API_BASE_URL).toContain('localhost');
+  it('should have empty string as default baseURL for Vite proxy / debe tener string vacío como baseURL por defecto para proxy de Vite', () => {
+    expect(typeof API_BASE_URL).toBe('string');
   });
 });

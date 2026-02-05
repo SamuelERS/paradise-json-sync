@@ -25,8 +25,8 @@ describe('API Configuration', () => {
   });
 
   describe('API_TIMEOUT', () => {
-    it('is 30 seconds', () => {
-      expect(API_TIMEOUT).toBe(30000);
+    it('is 3 minutes (180000ms) for handling large file uploads', () => {
+      expect(API_TIMEOUT).toBe(180000);
     });
 
     it('is a number', () => {
@@ -35,6 +35,10 @@ describe('API Configuration', () => {
 
     it('is positive', () => {
       expect(API_TIMEOUT).toBeGreaterThan(0);
+    });
+
+    it('is sufficient for large uploads (at least 60 seconds)', () => {
+      expect(API_TIMEOUT).toBeGreaterThanOrEqual(60000);
     });
   });
 });
@@ -73,8 +77,8 @@ describe('File Configuration', () => {
   });
 
   describe('MAX_FILES', () => {
-    it('allows 500 files', () => {
-      expect(MAX_FILES).toBe(500);
+    it('allows 10000 files for full year processing', () => {
+      expect(MAX_FILES).toBe(10000);
     });
 
     it('is a number', () => {
@@ -83,6 +87,13 @@ describe('File Configuration', () => {
 
     it('is positive', () => {
       expect(MAX_FILES).toBeGreaterThan(0);
+    });
+
+    it('supports a full year of invoices (27 per day)', () => {
+      const invoicesPerDay = 27;
+      const daysInYear = 365;
+      const expectedYearlyInvoices = invoicesPerDay * daysInYear;
+      expect(MAX_FILES).toBeGreaterThanOrEqual(expectedYearlyInvoices);
     });
   });
 });
