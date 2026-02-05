@@ -80,3 +80,4 @@ outputs/
 # Logs
 logs/
 *.log
+frontend/test-results/
