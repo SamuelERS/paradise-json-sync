@@ -2,9 +2,14 @@
 Bulk Upload Tests / Tests de Subida Masiva
 ==========================================
 
-Tests for bulk file upload functionality (up to 500 files).
-Tests para funcionalidad de subida masiva de archivos (hasta 500 archivos).
+Tests for bulk file upload functionality (up to 10000 files).
+Tests para funcionalidad de subida masiva de archivos (hasta 10000 archivos).
 """
+
+# IMPORTANT: Set TESTING before any imports that touch src.main
+# IMPORTANTE: Configurar TESTING antes de cualquier import que toque src.main
+import os
+os.environ["TESTING"] = "true"
 
 import time
 from io import BytesIO
@@ -19,11 +24,11 @@ client = TestClient(app)
 class TestBulkUpload:
     """Tests for bulk file upload scenarios."""
 
-    def test_upload_exactly_500_files(self):
-        """Upload exactly 500 files (at the limit)."""
+    def test_upload_1000_files(self):
+        """Upload 1000 files (well under the 10000 limit)."""
         files = [
-            ("files", (f"invoice_{i:03d}.json", BytesIO(b'{"id": ' + str(i).encode() + b'}'), "application/json"))
-            for i in range(500)
+            ("files", (f"invoice_{i:04d}.json", BytesIO(b'{"id": ' + str(i).encode() + b'}'), "application/json"))
+            for i in range(1000)
         ]
 
         response = client.post("/api/upload", files=files)
@@ -31,7 +36,7 @@ class TestBulkUpload:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["data"]["total_files"] == 500
+        assert data["data"]["total_files"] == 1000
 
     def test_upload_100_files_performance(self):
         """Upload 100 files should complete within reasonable time."""
@@ -173,31 +178,31 @@ class TestBulkUploadEdgeCases:
     """Edge case tests for bulk uploads."""
 
     def test_upload_at_file_count_boundary(self):
-        """Test uploading exactly at the 500 file boundary."""
-        # 499 files should succeed
-        files_499 = [
+        """Test uploading exactly at the 10000 file boundary."""
+        # 9999 files should succeed
+        files_9999 = [
             ("files", (f"test_{i}.json", BytesIO(b'{}'), "application/json"))
-            for i in range(499)
+            for i in range(9999)
         ]
-        response = client.post("/api/upload", files=files_499)
+        response = client.post("/api/upload", files=files_9999)
         assert response.status_code == 200
-        assert response.json()["data"]["total_files"] == 499
+        assert response.json()["data"]["total_files"] == 9999
 
-        # 500 files should succeed
-        files_500 = [
+        # 10000 files should succeed
+        files_10000 = [
             ("files", (f"test_{i}.json", BytesIO(b'{}'), "application/json"))
-            for i in range(500)
+            for i in range(10000)
         ]
-        response = client.post("/api/upload", files=files_500)
+        response = client.post("/api/upload", files=files_10000)
         assert response.status_code == 200
-        assert response.json()["data"]["total_files"] == 500
+        assert response.json()["data"]["total_files"] == 10000
 
-        # 501 files should fail
-        files_501 = [
+        # 10001 files should fail
+        files_10001 = [
             ("files", (f"test_{i}.json", BytesIO(b'{}'), "application/json"))
-            for i in range(501)
+            for i in range(10001)
         ]
-        response = client.post("/api/upload", files=files_501)
+        response = client.post("/api/upload", files=files_10001)
         assert response.status_code == 400
         assert response.json()["error"] == "TOO_MANY_FILES"
 

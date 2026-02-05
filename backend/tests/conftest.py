@@ -19,6 +19,24 @@ Este módulo provee:
                      Lista de facturas de muestra
 """
 
+# IMPORTANT: Set TESTING environment variable BEFORE any other imports
+# IMPORTANTE: Configurar variable TESTING ANTES de cualquier otro import
+# This disables rate limiting in the application
+# Esto deshabilita el rate limiting en la aplicación
+import os
+os.environ["TESTING"] = "true"
+
+
+def pytest_configure(config):
+    """
+    Pytest hook that runs before test collection.
+    Hook de pytest que se ejecuta antes de la recolección de tests.
+
+    Ensures TESTING is set before any test modules are imported.
+    """
+    os.environ["TESTING"] = "true"
+
+
 import json
 import sys
 from collections.abc import Generator
@@ -32,6 +50,20 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.models.invoice import Invoice, InvoiceItem, InvoiceType
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """
+    Test environment cleanup fixture.
+    Fixture de limpieza del entorno de pruebas.
+
+    TESTING env var is set at module level (above) to ensure it's
+    available before any test modules import src.main.
+    This fixture handles cleanup after all tests complete.
+    """
+    yield
+    os.environ.pop("TESTING", None)
 
 
 @pytest.fixture
