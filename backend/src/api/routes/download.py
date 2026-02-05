@@ -13,6 +13,10 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
 from src.api.exceptions import APIException, JobNotCompletedError, JobNotFoundError
+from src.api.schemas.responses import ErrorResponse
+from src.core.excel_exporter import ExcelExporter
+from src.core.json_processor import JSONProcessor
+from src.services.job_service import job_service
 
 
 class PathTraversalError(APIException):
@@ -24,10 +28,6 @@ class PathTraversalError(APIException):
             message="Invalid file path / Ruta de archivo inválida",
             status_code=403,
         )
-from src.api.schemas.responses import ErrorResponse
-from src.core.excel_exporter import ExcelExporter
-from src.core.json_processor import JSONProcessor
-from src.services.job_service import job_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,102 @@ CONTENT_TYPES = {
 }
 
 
+# ── Common helpers / Helpers comunes ──────────────────────────────────────
+
+
+async def _get_completed_job(job_id: str) -> dict:
+    """
+    Fetch and validate a completed job.
+    Obtiene y valida un trabajo completado.
+
+    Raises / Lanza:
+        JobNotFoundError: If job not found / Si no se encuentra
+        JobNotCompletedError: If not completed / Si no está completado
+    """
+    job = await job_service.get_job(job_id)
+
+    if not job:
+        raise JobNotFoundError(job_id)
+
+    if job.get("status") != "completed":
+        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
+
+    return job
+
+
+def _get_validated_output_path(job: dict, job_id: str) -> Path:
+    """
+    Extract and validate the output path from a job result.
+    Extrae y valida el path de salida del resultado de un trabajo.
+
+    Raises / Lanza:
+        JobNotFoundError: If output path missing / Si falta el path
+        PathTraversalError: If path outside OUTPUT_DIR / Si el path está fuera
+    """
+    result = job.get("result", {})
+    output_path_str = result.get("output_path")
+    if not output_path_str:
+        raise JobNotFoundError(f"Output path not found for job {job_id}")
+
+    output_path = Path(output_path_str)
+
+    # SECURITY: Validate path before any file operation
+    if not validate_output_path(output_path):
+        logger.warning("Path traversal attempt blocked for job_id=%s", job_id)
+        raise PathTraversalError()
+
+    return output_path
+
+
+async def _get_invoices_for_job(job: dict, job_id: str, target_format: str) -> list:
+    """
+    Re-process upload files to extract invoices for format conversion.
+    Re-procesa archivos de upload para extraer facturas para conversión de formato.
+
+    Raises / Lanza:
+        JobNotFoundError: If upload files unavailable / Si los archivos no están disponibles
+    """
+    from src.services.file_service import file_service
+
+    upload_id = job.get("upload_id")
+    if not upload_id:
+        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
+    files = await file_service.get_files(upload_id)
+
+    if not files:
+        raise JobNotFoundError(
+            f"Upload files not found for job {job_id}. "
+            "Los archivos originales ya no están disponibles."
+        )
+
+    json_processor = JSONProcessor()
+    invoices = []
+
+    for file_info in files:
+        if file_info["type"] == "json":
+            try:
+                invoice = json_processor.process_file(file_info["path"])
+                invoices.append(invoice)
+            except Exception as e:
+                logger.warning(
+                    "Error processing %s for %s: %s",
+                    file_info["name"],
+                    target_format,
+                    e,
+                )
+
+    if not invoices:
+        raise JobNotFoundError(
+            f"No valid invoices found for job {job_id}. "
+            "No se encontraron facturas válidas."
+        )
+
+    return invoices
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────
+
+
 @router.get(
     "/download/{job_id}",
     responses={
@@ -81,44 +177,13 @@ async def download_result(job_id: str) -> FileResponse:
     """
     Download the result file for a completed job.
     Descarga el archivo de resultado de un trabajo completado.
-
-    The job must be in 'completed' status.
-    El trabajo debe estar en estado 'completed'.
-
-    Args / Argumentos:
-        job_id: Job identifier / Identificador del trabajo
-
-    Returns / Retorna:
-        FileResponse with the result file / Archivo de resultado
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found / Si no se encuentra el trabajo
-        JobNotCompletedError: If job not completed / Si el trabajo no está completado
     """
-    job = await job_service.get_job(job_id)
+    job = await _get_completed_job(job_id)
+    output_path = _get_validated_output_path(job, job_id)
 
-    if not job:
-        raise JobNotFoundError(job_id)
-
-    if job.get("status") != "completed":
-        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
-
-    # Safe access to nested dict values
-    result = job.get("result", {})
-    output_path_str = result.get("output_path")
-    if not output_path_str:
-        raise JobNotFoundError(f"Output path not found for job {job_id}")
-
-    output_path = Path(output_path_str)
     output_format = job.get("output_format", "xlsx")
+    result = job.get("result", {})
     filename = result.get("output_file", f"result_{job_id}")
-
-    # Validate path is within allowed directory
-    if not validate_output_path(output_path):
-        # SECURITY: Don't log the actual path to prevent information disclosure
-        # SEGURIDAD: No loguear el path real para prevenir divulgación de información
-        logger.warning("Path traversal attempt blocked for job_id=%s", job_id)
-        raise PathTraversalError()
 
     logger.info("Download requested for job %s: %s", job_id, filename)
 
@@ -145,58 +210,23 @@ async def download_result(job_id: str) -> FileResponse:
 async def download_excel(job_id: str) -> FileResponse:
     """
     Download the Excel result file for a completed job.
-    Descarga el archivo Excel de resultado de un trabajo completado.
-
     If the job was processed with a different format, generates Excel on demand.
-    Si el trabajo se procesó con otro formato, genera el Excel bajo demanda.
-
-    Args / Argumentos:
-        job_id: Job identifier / Identificador del trabajo
-
-    Returns / Retorna:
-        FileResponse with Excel file / Archivo Excel
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found / Si no se encuentra el trabajo
-        JobNotCompletedError: If job not completed / Si el trabajo no está completado
     """
-    job = await job_service.get_job(job_id)
-
-    if not job:
-        raise JobNotFoundError(job_id)
-
-    if job.get("status") != "completed":
-        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
-
-    # Safe access to nested result dict
-    result = job.get("result", {})
-    output_path_str = result.get("output_path")
-    if not output_path_str:
-        raise JobNotFoundError(f"Output path not found for job {job_id}")
-
-    original_path = Path(output_path_str)
+    job = await _get_completed_job(job_id)
+    original_path = _get_validated_output_path(job, job_id)
     filename = f"consolidado_{job_id}.xlsx"
 
-    # Check if the original file is already an Excel
+    # Return original if already Excel
     if job.get("output_format") == "xlsx" and original_path.suffix.lower() == ".xlsx":
-        logger.info("Excel download requested for job %s (original format)", job_id)
+        logger.info("Excel download for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
             media_type=CONTENT_TYPES["xlsx"],
             filename=filename,
         )
 
-    # Need to generate Excel from the original data
-    output_format = job.get("output_format", "xlsx")
-    logger.info(
-        "Excel download requested for job %s - generating from %s format",
-        job_id,
-        output_format,
-    )
-
+    # Return cached conversion if available
     xlsx_path = OUTPUT_DIR / f"reporte_{job_id}.xlsx"
-
-    # If Excel already generated for this job, return it
     if xlsx_path.exists():
         logger.info("Returning cached Excel for job %s", job_id)
         return FileResponse(
@@ -205,39 +235,8 @@ async def download_excel(job_id: str) -> FileResponse:
             filename=filename,
         )
 
-    # Generate Excel from original upload files
-    from src.services.file_service import file_service
-
-    upload_id = job.get("upload_id")
-    if not upload_id:
-        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
-    files = await file_service.get_files(upload_id)
-
-    if not files:
-        raise JobNotFoundError(
-            f"Upload files not found for job {job_id}. "
-            "Los archivos originales ya no están disponibles."
-        )
-
-    # Process files to get invoices
-    json_processor = JSONProcessor()
-    invoices = []
-
-    for file_info in files:
-        if file_info["type"] == "json":
-            try:
-                invoice = json_processor.process_file(file_info["path"])
-                invoices.append(invoice)
-            except Exception as e:
-                logger.warning("Error processing %s for Excel: %s", file_info["name"], e)
-
-    if not invoices:
-        raise JobNotFoundError(
-            f"No valid invoices found for job {job_id}. "
-            "No se encontraron facturas válidas."
-        )
-
-    # Generate Excel
+    # Generate Excel from upload files
+    invoices = await _get_invoices_for_job(job, job_id, "Excel")
     exporter = ExcelExporter()
     exporter.export_to_excel(
         invoices,
@@ -270,59 +269,24 @@ async def download_excel(job_id: str) -> FileResponse:
 async def download_pdf(job_id: str) -> FileResponse:
     """
     Download the PDF result file for a completed job.
-    Descarga el archivo PDF de resultado de un trabajo completado.
-
     If the job was processed with a different format, generates PDF on demand.
-    Si el trabajo se procesó con otro formato, genera el PDF bajo demanda.
-
-    Args / Argumentos:
-        job_id: Job identifier / Identificador del trabajo
-
-    Returns / Retorna:
-        FileResponse with PDF file / Archivo PDF
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found / Si no se encuentra el trabajo
-        JobNotCompletedError: If job not completed / Si el trabajo no está completado
     """
-    job = await job_service.get_job(job_id)
-
-    if not job:
-        raise JobNotFoundError(job_id)
-
-    if job.get("status") != "completed":
-        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
-
-    # Safe access to nested result dict
-    result = job.get("result", {})
-    output_path_str = result.get("output_path")
-    if not output_path_str:
-        raise JobNotFoundError(f"Output path not found for job {job_id}")
-
-    original_path = Path(output_path_str)
+    job = await _get_completed_job(job_id)
+    original_path = _get_validated_output_path(job, job_id)
     filename = f"consolidado_{job_id}.pdf"
     output_format = job.get("output_format", "xlsx")
 
-    # Check if the original file is already a PDF
+    # Return original if already PDF
     if output_format == "pdf" and original_path.suffix.lower() == ".pdf":
-        logger.info("PDF download requested for job %s (original format)", job_id)
+        logger.info("PDF download for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
             media_type=CONTENT_TYPES["pdf"],
             filename=filename,
         )
 
-    # Need to generate PDF from the original data
-    # Re-process the files to generate PDF
-    logger.info(
-        "PDF download requested for job %s - generating from %s format",
-        job_id,
-        output_format,
-    )
-
+    # Return cached conversion if available
     pdf_path = OUTPUT_DIR / f"reporte_{job_id}.pdf"
-
-    # If PDF already generated for this job, return it
     if pdf_path.exists():
         logger.info("Returning cached PDF for job %s", job_id)
         return FileResponse(
@@ -331,39 +295,8 @@ async def download_pdf(job_id: str) -> FileResponse:
             filename=filename,
         )
 
-    # Generate PDF from original upload files
-    from src.services.file_service import file_service
-
-    upload_id = job.get("upload_id")
-    if not upload_id:
-        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
-    files = await file_service.get_files(upload_id)
-
-    if not files:
-        raise JobNotFoundError(
-            f"Upload files not found for job {job_id}. "
-            "Los archivos originales ya no están disponibles."
-        )
-
-    # Process files to get invoices
-    json_processor = JSONProcessor()
-    invoices = []
-
-    for file_info in files:
-        if file_info["type"] == "json":
-            try:
-                invoice = json_processor.process_file(file_info["path"])
-                invoices.append(invoice)
-            except Exception as e:
-                logger.warning("Error processing %s for PDF: %s", file_info["name"], e)
-
-    if not invoices:
-        raise JobNotFoundError(
-            f"No valid invoices found for job {job_id}. "
-            "No se encontraron facturas válidas."
-        )
-
-    # Generate PDF
+    # Generate PDF from upload files
+    invoices = await _get_invoices_for_job(job, job_id, "PDF")
     exporter = ExcelExporter()
     exporter.export_to_pdf(
         invoices,
@@ -396,58 +329,24 @@ async def download_pdf(job_id: str) -> FileResponse:
 async def download_json(job_id: str) -> FileResponse:
     """
     Download the JSON result file for a completed job.
-    Descarga el archivo JSON de resultado de un trabajo completado.
-
     If the job was processed with a different format, generates JSON on demand.
-    Si el trabajo se procesó con otro formato, genera el JSON bajo demanda.
-
-    Args / Argumentos:
-        job_id: Job identifier / Identificador del trabajo
-
-    Returns / Retorna:
-        FileResponse with JSON file / Archivo JSON
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found / Si no se encuentra el trabajo
-        JobNotCompletedError: If job not completed / Si el trabajo no está completado
     """
-    job = await job_service.get_job(job_id)
-
-    if not job:
-        raise JobNotFoundError(job_id)
-
-    if job.get("status") != "completed":
-        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
-
-    # Safe access to nested result dict
-    result = job.get("result", {})
-    output_path_str = result.get("output_path")
-    if not output_path_str:
-        raise JobNotFoundError(f"Output path not found for job {job_id}")
-
-    original_path = Path(output_path_str)
+    job = await _get_completed_job(job_id)
+    original_path = _get_validated_output_path(job, job_id)
     filename = f"consolidado_{job_id}.json"
     output_format = job.get("output_format", "xlsx")
 
-    # Check if the original file is already a JSON
+    # Return original if already JSON
     if output_format == "json" and original_path.suffix.lower() == ".json":
-        logger.info("JSON download requested for job %s (original format)", job_id)
+        logger.info("JSON download for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
             media_type=CONTENT_TYPES["json"],
             filename=filename,
         )
 
-    # Need to generate JSON from the original data
-    logger.info(
-        "JSON download requested for job %s - generating from %s format",
-        job_id,
-        output_format,
-    )
-
+    # Return cached conversion if available
     json_path = OUTPUT_DIR / f"reporte_{job_id}.json"
-
-    # If JSON already generated for this job, return it
     if json_path.exists():
         logger.info("Returning cached JSON for job %s", job_id)
         return FileResponse(
@@ -456,39 +355,8 @@ async def download_json(job_id: str) -> FileResponse:
             filename=filename,
         )
 
-    # Generate JSON from original upload files
-    from src.services.file_service import file_service
-
-    upload_id = job.get("upload_id")
-    if not upload_id:
-        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
-    files = await file_service.get_files(upload_id)
-
-    if not files:
-        raise JobNotFoundError(
-            f"Upload files not found for job {job_id}. "
-            "Los archivos originales ya no están disponibles."
-        )
-
-    # Process files to get invoices
-    json_processor = JSONProcessor()
-    invoices = []
-
-    for file_info in files:
-        if file_info["type"] == "json":
-            try:
-                invoice = json_processor.process_file(file_info["path"])
-                invoices.append(invoice)
-            except Exception as e:
-                logger.warning("Error processing %s for JSON: %s", file_info["name"], e)
-
-    if not invoices:
-        raise JobNotFoundError(
-            f"No valid invoices found for job {job_id}. "
-            "No se encontraron facturas válidas."
-        )
-
-    # Generate JSON
+    # Generate JSON from upload files
+    invoices = await _get_invoices_for_job(job, job_id, "JSON")
     exporter = ExcelExporter()
     exporter.export_to_json(
         invoices,

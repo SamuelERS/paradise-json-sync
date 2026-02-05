@@ -21,5 +21,3 @@ export type { UseStatusReturn } from './useStatus';
 export { useDownload, default as useDownloadDefault } from './useDownload';
 export type { UseDownloadReturn } from './useDownload';
 
-// useAppState Hook
-export { useAppState, default as useAppStateDefault } from './useAppState';

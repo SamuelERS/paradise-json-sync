@@ -5,6 +5,7 @@
  * Muestra los resultados del procesamiento y opciones de descarga.
  */
 import type { ProcessResults } from '../../types';
+import type { DownloadType } from '../../services/downloadService';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { DownloadButton } from './DownloadButton';
@@ -15,6 +16,10 @@ interface ResultsPanelProps {
   status: 'pending' | 'processing' | 'completed' | 'error';
   /** Processing results / Resultados del procesamiento */
   results?: ProcessResults;
+  /** Whether a download is in progress / Si una descarga está en progreso */
+  isDownloading?: boolean;
+  /** Type of download in progress / Tipo de descarga en progreso */
+  downloadType?: DownloadType | null;
   /** Download Excel handler / Manejador de descarga Excel */
   onDownloadExcel: () => void;
   /** Download PDF handler / Manejador de descarga PDF */
@@ -28,6 +33,8 @@ interface ResultsPanelProps {
 export function ResultsPanel({
   status,
   results,
+  isDownloading = false,
+  downloadType = null,
   onDownloadExcel,
   onDownloadPdf,
   onDownloadJson,
@@ -77,10 +84,25 @@ export function ResultsPanel({
         {results && results.errors.length > 0 && <ErrorList errors={results.errors} />}
         {hasPartialSuccess && (
           <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
-            <DownloadButton type="excel" onClick={onDownloadExcel} />
-            <DownloadButton type="pdf" onClick={onDownloadPdf} />
-            <DownloadButton type="json" onClick={onDownloadJson} />
-            <Button variant="secondary" onClick={onReset}>
+            <DownloadButton
+              type="excel"
+              onClick={onDownloadExcel}
+              disabled={isDownloading}
+              isLoading={isDownloading && downloadType === 'excel'}
+            />
+            <DownloadButton
+              type="pdf"
+              onClick={onDownloadPdf}
+              disabled={isDownloading}
+              isLoading={isDownloading && downloadType === 'pdf'}
+            />
+            <DownloadButton
+              type="json"
+              onClick={onDownloadJson}
+              disabled={isDownloading}
+              isLoading={isDownloading && downloadType === 'json'}
+            />
+            <Button variant="secondary" onClick={onReset} disabled={isDownloading}>
               Procesar más archivos
             </Button>
           </div>

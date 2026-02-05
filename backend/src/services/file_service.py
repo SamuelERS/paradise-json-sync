@@ -180,8 +180,16 @@ class FileService:
 
             upload_path = self.upload_dir / upload_id
             if upload_path.exists():
-                shutil.rmtree(upload_path)
+                try:
+                    shutil.rmtree(upload_path)
+                except OSError as e:
+                    logger.warning(
+                        "Failed to delete upload files for %s: %s",
+                        upload_id,
+                        e,
+                    )
 
+            # Always clean registry even if file deletion failed
             del self._uploads[upload_id]
 
         logger.info("Deleted upload: %s", upload_id)
@@ -196,18 +204,27 @@ class FileService:
             Number of uploads cleaned up / Número de uploads limpiados
         """
         now = datetime.utcnow()
+        deleted_count = 0
 
-        # Get expired upload IDs under lock
+        # Perform full cleanup under a single lock to avoid race conditions
         async with self._lock:
             expired = [
                 upload_id for upload_id, data in self._uploads.items()
                 if data.get("expires_at", now) < now
             ]
 
-        # Delete each expired upload (delete_upload has its own lock)
-        deleted_count = 0
-        for upload_id in expired:
-            if await self.delete_upload(upload_id):
+            for upload_id in expired:
+                upload_path = self.upload_dir / upload_id
+                if upload_path.exists():
+                    try:
+                        shutil.rmtree(upload_path)
+                    except OSError as e:
+                        logger.warning(
+                            "Failed to delete expired upload files for %s: %s",
+                            upload_id,
+                            e,
+                        )
+                del self._uploads[upload_id]
                 deleted_count += 1
 
         if deleted_count:

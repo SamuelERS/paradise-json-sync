@@ -5,22 +5,10 @@
  * ES: Funciones auxiliares para operaciones de archivo, validación y formateo.
  */
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE } from '../config/constants';
+import type { FileInfo } from '../types';
 
-/**
- * File Info Interface / Interfaz de Información de Archivo
- *
- * EN: Structure containing file metadata for UI display.
- * ES: Estructura con metadatos del archivo para mostrar en la UI.
- */
-export interface FileInfo {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  file: File;
-  status: 'pending' | 'uploading' | 'success' | 'error';
-  errorMessage?: string;
-}
+// Re-export FileInfo from canonical source
+export type { FileInfo } from '../types';
 
 /**
  * Validation Result Interface / Interfaz de Resultado de Validación
@@ -190,11 +178,14 @@ export function generateFileId(): string {
  * @returns FileInfo object / Objeto FileInfo
  */
 export function createFileInfo(file: File): FileInfo {
+  const ext = getFileExtension(file.name);
+  const fileType: 'json' | 'pdf' = ext === '.json' ? 'json' : 'pdf';
+
   return {
     id: generateFileId(),
     name: file.name,
     size: file.size,
-    type: file.type || getFileExtension(file.name),
+    type: fileType,
     file,
     status: 'pending',
   };

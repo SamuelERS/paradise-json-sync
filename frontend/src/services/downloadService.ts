@@ -16,63 +16,60 @@ import { API_ENDPOINTS } from '../config/constants';
 export type DownloadType = 'excel' | 'pdf' | 'json';
 
 /**
+ * Validate Download Response / Validar Respuesta de Descarga
+ *
+ * EN: Checks that the response blob is a valid file and not a JSON error.
+ *     When responseType is 'blob', error JSON responses become blobs too.
+ * ES: Verifica que el blob de respuesta sea un archivo válido y no un error JSON.
+ */
+async function validateDownloadBlob(blob: Blob, expectedType: string): Promise<Blob> {
+  // If the response is JSON when we expected a file, it's likely an error
+  if (blob.type === 'application/json' && expectedType !== 'application/json') {
+    const text = await blob.text();
+    try {
+      const errorData = JSON.parse(text) as { message?: string; error?: string };
+      throw new Error(errorData.message || errorData.error || 'Error en la descarga del archivo');
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error('Respuesta inesperada del servidor');
+      }
+      throw e;
+    }
+  }
+  return blob;
+}
+
+/**
  * Download Excel / Descargar Excel
- *
- * EN: Downloads the Excel file for a completed job.
- * ES: Descarga el archivo Excel para un trabajo completado.
- *
- * @param jobId - Job identifier / Identificador del trabajo
- * @returns Promise with file Blob / Promesa con Blob del archivo
- * @throws Error if download fails / Error si falla la descarga
  */
 export async function downloadExcel(jobId: string): Promise<Blob> {
   const response = await api.get(
     `${API_ENDPOINTS.DOWNLOAD_EXCEL}/${jobId}`,
-    {
-      responseType: 'blob',
-    }
+    { responseType: 'blob' }
   );
-  return response.data;
+  return validateDownloadBlob(response.data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
 /**
  * Download PDF / Descargar PDF
- *
- * EN: Downloads the PDF file for a completed job.
- * ES: Descarga el archivo PDF para un trabajo completado.
- *
- * @param jobId - Job identifier / Identificador del trabajo
- * @returns Promise with file Blob / Promesa con Blob del archivo
- * @throws Error if download fails / Error si falla la descarga
  */
 export async function downloadPdf(jobId: string): Promise<Blob> {
   const response = await api.get(
     `${API_ENDPOINTS.DOWNLOAD_PDF}/${jobId}`,
-    {
-      responseType: 'blob',
-    }
+    { responseType: 'blob' }
   );
-  return response.data;
+  return validateDownloadBlob(response.data, 'application/pdf');
 }
 
 /**
  * Download JSON / Descargar JSON
- *
- * EN: Downloads the consolidated JSON file for a completed job.
- * ES: Descarga el archivo JSON consolidado para un trabajo completado.
- *
- * @param jobId - Job identifier / Identificador del trabajo
- * @returns Promise with file Blob / Promesa con Blob del archivo
- * @throws Error if download fails / Error si falla la descarga
  */
 export async function downloadJson(jobId: string): Promise<Blob> {
   const response = await api.get(
     `${API_ENDPOINTS.DOWNLOAD_JSON}/${jobId}`,
-    {
-      responseType: 'blob',
-    }
+    { responseType: 'blob' }
   );
-  return response.data;
+  return validateDownloadBlob(response.data, 'application/json');
 }
 
 /**
@@ -91,21 +88,23 @@ export function triggerDownload(blob: Blob, filename: string): void {
   // ES: Crear URL de objeto para el blob
   const url = window.URL.createObjectURL(blob);
 
-  // EN: Create temporary link element
-  // ES: Crear elemento de enlace temporal
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
+  try {
+    // EN: Create temporary link element
+    // ES: Crear elemento de enlace temporal
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
 
-  // EN: Append to body, click, and remove
-  // ES: Agregar al body, hacer click, y remover
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // EN: Revoke object URL to free memory
-  // ES: Revocar URL de objeto para liberar memoria
-  window.URL.revokeObjectURL(url);
+    // EN: Append to body, click, and remove
+    // ES: Agregar al body, hacer click, y remover
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } finally {
+    // EN: Always revoke object URL to free memory
+    // ES: Siempre revocar URL de objeto para liberar memoria
+    window.URL.revokeObjectURL(url);
+  }
 }
 
 /**

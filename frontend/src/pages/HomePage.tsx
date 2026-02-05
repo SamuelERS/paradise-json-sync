@@ -13,6 +13,21 @@ import { ResultsPanel } from '../components/results';
 import { useDownload } from '../hooks/useDownload';
 import { useUpload } from '../hooks/useUpload';
 import { useProcess } from '../hooks/useProcess';
+import type { DownloadType } from '../services/downloadService';
+
+/**
+ * Step Display Names / Nombres de Pasos para Mostrar
+ *
+ * Maps backend step keys to user-friendly Spanish labels.
+ */
+const STEP_LABELS: Record<string, string> = {
+  'Iniciando procesamiento': 'Iniciando procesamiento...',
+  'validating': 'Validando archivos...',
+  'extracting': 'Extrayendo datos...',
+  'consolidating': 'Consolidando información...',
+  'generating': 'Generando reporte...',
+  'processing': 'Procesando...',
+};
 
 export function HomePage() {
   const [appStatus, setAppStatus] = useState<AppStatus>('idle');
@@ -20,7 +35,6 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
 
-  // Hooks for real backend operations
   const {
     files,
     isUploading,
@@ -44,18 +58,27 @@ export function HomePage() {
   } = useProcess();
 
   const {
+    isDownloading,
+    downloadType,
     downloadExcelFile,
     downloadPdfFile,
     downloadJsonFile,
     error: downloadError,
   } = useDownload();
 
-  // Combine progress from upload and process phases (memoized)
+  // Combine progress from upload and process phases
   const totalProgress = useMemo(() => {
-    if (isUploading) return uploadProgress * 0.3; // Upload is 30% of total
-    if (isProcessing) return 30 + processProgress * 0.7; // Process is 70% of total
+    if (isUploading) return uploadProgress * 0.3;
+    if (isProcessing) return 30 + processProgress * 0.7;
     return 0;
   }, [isUploading, isProcessing, uploadProgress, processProgress]);
+
+  // User-friendly step label
+  const stepLabel = useMemo(() => {
+    if (isUploading) return 'Subiendo archivos...';
+    if (!currentStep) return 'Procesando...';
+    return STEP_LABELS[currentStep] || currentStep;
+  }, [isUploading, currentStep]);
 
   // Update app status based on hook states
   useEffect(() => {
@@ -120,59 +143,44 @@ export function HomePage() {
     setResults(undefined);
 
     try {
-      // Step 1: Upload files to backend (returns upload_id)
       const uploadId = await upload();
-
-      // Step 2: Start processing - returns the REAL job_id from backend
       const realJobId = await startProcess(uploadId);
       setJobId(realJobId);
     } catch (err) {
       setAppStatus('error');
-      setError(err instanceof Error ? err.message : 'Error durante el procesamiento');
+      if (err instanceof Error) {
+        // Distinguish upload vs process errors for the user
+        const isUploadPhase = !jobId;
+        setError(
+          isUploadPhase
+            ? `No se pudieron subir los archivos: ${err.message}`
+            : `Error al procesar los archivos: ${err.message}`
+        );
+      } else {
+        setError('Error inesperado durante el procesamiento');
+      }
     }
-  }, [files.length, upload, startProcess]);
+  }, [files.length, upload, startProcess, jobId]);
 
-  const handleDownloadExcel = useCallback(async () => {
+  // Unified download handler
+  const handleDownload = useCallback(async (type: DownloadType) => {
     if (!jobId) {
       setError('No hay resultados para descargar.');
       return;
     }
+    const downloaders = {
+      excel: downloadExcelFile,
+      pdf: downloadPdfFile,
+      json: downloadJsonFile,
+    };
+    const extensions = { excel: 'xlsx', pdf: 'pdf', json: 'json' };
     try {
-      await downloadExcelFile(jobId, `consolidado_${jobId}.xlsx`);
+      await downloaders[type](jobId, `consolidado_${jobId}.${extensions[type]}`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('Error descargando Excel:', errorMsg);
-      setError(`Error al descargar el archivo Excel: ${errorMsg}`);
+      setError(`Error al descargar el archivo ${type.toUpperCase()}: ${errorMsg}`);
     }
-  }, [jobId, downloadExcelFile]);
-
-  const handleDownloadPdf = useCallback(async () => {
-    if (!jobId) {
-      setError('No hay resultados para descargar.');
-      return;
-    }
-    try {
-      await downloadPdfFile(jobId, `consolidado_${jobId}.pdf`);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('Error descargando PDF:', errorMsg);
-      setError(`Error al descargar el archivo PDF: ${errorMsg}`);
-    }
-  }, [jobId, downloadPdfFile]);
-
-  const handleDownloadJson = useCallback(async () => {
-    if (!jobId) {
-      setError('No hay resultados para descargar.');
-      return;
-    }
-    try {
-      await downloadJsonFile(jobId, `consolidado_${jobId}.json`);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('Error descargando JSON:', errorMsg);
-      setError(`Error al descargar el archivo JSON: ${errorMsg}`);
-    }
-  }, [jobId, downloadJsonFile]);
+  }, [jobId, downloadExcelFile, downloadPdfFile, downloadJsonFile]);
 
   const handleReset = useCallback(() => {
     setAppStatus('idle');
@@ -185,12 +193,6 @@ export function HomePage() {
   }, [clearFiles, resetProcess, clearUploadError]);
 
   const isBusy = isUploading || isProcessing;
-
-  // Convert FileInfo from useUpload to the format expected by FileList (memoized)
-  const filesForDisplay = useMemo(() => files.map((f) => ({
-    ...f,
-    type: (f.name?.toLowerCase().endsWith('.json')) ? 'json' as const : 'pdf' as const,
-  })), [files]);
 
   return (
     <MainLayout>
@@ -219,7 +221,7 @@ export function HomePage() {
                   onFilesSelected={handleFilesSelected}
                   disabled={isBusy}
                 />
-                <FileList files={filesForDisplay} onRemove={handleRemoveFile} />
+                <FileList files={files} onRemove={handleRemoveFile} />
                 {files.length > 0 && (
                   <div className="flex justify-center pt-4">
                     <Button
@@ -239,7 +241,7 @@ export function HomePage() {
             <UploadProgress
               totalFiles={files.length}
               processedFiles={files.filter((f) => f.status === 'success').length}
-              currentFile={currentStep || (isUploading ? 'Subiendo archivos...' : 'Procesando...')}
+              currentFile={stepLabel}
               progress={totalProgress}
               status={isUploading ? 'uploading' : 'processing'}
             />
@@ -248,9 +250,11 @@ export function HomePage() {
             <ResultsPanel
               status={appStatus === 'error' ? 'error' : 'completed'}
               results={results}
-              onDownloadExcel={handleDownloadExcel}
-              onDownloadPdf={handleDownloadPdf}
-              onDownloadJson={handleDownloadJson}
+              isDownloading={isDownloading}
+              downloadType={downloadType}
+              onDownloadExcel={() => handleDownload('excel')}
+              onDownloadPdf={() => handleDownload('pdf')}
+              onDownloadJson={() => handleDownload('json')}
               onReset={handleReset}
             />
           )}

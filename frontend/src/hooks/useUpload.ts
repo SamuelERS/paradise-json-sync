@@ -99,24 +99,38 @@ export function useUpload(): UseUploadReturn {
    */
   const addFiles = useCallback((newFiles: File[]): void => {
     const fileInfos: FileInfo[] = [];
+    let duplicateCount = 0;
 
-    for (const file of newFiles) {
-      const validation = validateFile(file);
-      const fileInfo = createFileInfo(file);
+    setState((prev) => {
+      for (const file of newFiles) {
+        // Check for duplicates by name + size
+        const isDuplicate = prev.files.some(
+          (existing) => existing.name === file.name && existing.size === file.size
+        );
+        if (isDuplicate) {
+          duplicateCount++;
+          continue;
+        }
 
-      if (!validation.isValid) {
-        fileInfo.status = 'error';
-        fileInfo.errorMessage = validation.errors.join(', ');
+        const validation = validateFile(file);
+        const fileInfo = createFileInfo(file);
+
+        if (!validation.isValid) {
+          fileInfo.status = 'error';
+          fileInfo.errorMessage = validation.errors.join(', ');
+        }
+
+        fileInfos.push(fileInfo);
       }
 
-      fileInfos.push(fileInfo);
-    }
-
-    setState((prev) => ({
-      ...prev,
-      files: [...prev.files, ...fileInfos],
-      error: null,
-    }));
+      return {
+        ...prev,
+        files: [...prev.files, ...fileInfos],
+        error: duplicateCount > 0
+          ? `${duplicateCount} archivo${duplicateCount !== 1 ? 's' : ''} duplicado${duplicateCount !== 1 ? 's' : ''} omitido${duplicateCount !== 1 ? 's' : ''}`
+          : null,
+      };
+    });
   }, []);
 
   /**
