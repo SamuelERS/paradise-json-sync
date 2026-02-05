@@ -378,3 +378,254 @@ class ExcelExporter:
 
             adjusted_width = min(max_length + 2, 50)
             sheet.column_dimensions[column_letter].width = adjusted_width
+
+    def export_to_csv(
+        self,
+        invoices: list[Invoice],
+        output_path: str,
+        include_header: bool = True,
+        delimiter: str = ",",
+    ) -> str:
+        """
+        Export invoices to CSV format.
+        Exporta facturas a formato CSV.
+
+        Args / Argumentos:
+            invoices: List of invoices to export / Lista de facturas a exportar
+            output_path: Path for output file / Ruta del archivo de salida
+            include_header: Include column headers / Incluir encabezados
+            delimiter: Field delimiter / Delimitador de campos
+
+        Returns / Retorna:
+            Path to created file / Ruta al archivo creado
+        """
+        import csv
+
+        if not invoices:
+            raise ExcelExporterError("No invoices provided for export")
+
+        output_file = Path(output_path)
+        if not output_file.suffix:
+            output_file = output_file.with_suffix(".csv")
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter=delimiter)
+
+            if include_header:
+                writer.writerow(self.HEADERS)
+
+            for invoice in invoices:
+                writer.writerow([
+                    invoice.document_number,
+                    invoice.invoice_type.value,
+                    invoice.issue_date.isoformat(),
+                    invoice.customer_name,
+                    invoice.customer_id or "",
+                    float(invoice.subtotal),
+                    float(invoice.tax),
+                    float(invoice.total),
+                    invoice.source_file or "",
+                ])
+
+        logger.info("Exported %d invoices to CSV: %s", len(invoices), output_file)
+        return str(output_file)
+
+    def export_to_json(
+        self,
+        invoices: list[Invoice],
+        output_path: str,
+        indent: int = 2,
+        include_metadata: bool = True,
+    ) -> str:
+        """
+        Export invoices to JSON format.
+        Exporta facturas a formato JSON.
+
+        Args / Argumentos:
+            invoices: List of invoices to export / Lista de facturas a exportar
+            output_path: Path for output file / Ruta del archivo de salida
+            indent: JSON indentation / Indentación del JSON
+            include_metadata: Include export metadata / Incluir metadata de exportación
+
+        Returns / Retorna:
+            Path to created file / Ruta al archivo creado
+        """
+        import json
+        from datetime import datetime
+
+        if not invoices:
+            raise ExcelExporterError("No invoices provided for export")
+
+        output_file = Path(output_path)
+        if not output_file.suffix:
+            output_file = output_file.with_suffix(".json")
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        def invoice_to_dict(inv: Invoice) -> dict:
+            return {
+                "document_number": inv.document_number,
+                "type": inv.invoice_type.value,
+                "issue_date": inv.issue_date.isoformat(),
+                "customer": {
+                    "name": inv.customer_name,
+                    "id": inv.customer_id or "",
+                },
+                "amounts": {
+                    "subtotal": float(inv.subtotal),
+                    "tax": float(inv.tax),
+                    "total": float(inv.total),
+                },
+                "items": [
+                    {
+                        "description": item.description,
+                        "quantity": float(item.quantity),
+                        "unit_price": float(item.unit_price),
+                        "total": float(item.total),
+                    }
+                    for item in inv.items
+                ],
+                "source_file": inv.source_file or "",
+            }
+
+        data = {
+            "invoices": [invoice_to_dict(inv) for inv in invoices],
+        }
+
+        if include_metadata:
+            total_amount = sum(float(inv.total) for inv in invoices)
+            data["metadata"] = {
+                "exported_at": datetime.utcnow().isoformat(),
+                "total_invoices": len(invoices),
+                "total_amount": total_amount,
+                "currency": self.currency_symbol,
+            }
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=indent, ensure_ascii=False)
+
+        logger.info("Exported %d invoices to JSON: %s", len(invoices), output_file)
+        return str(output_file)
+
+    def export_to_pdf(
+        self,
+        invoices: list[Invoice],
+        output_path: str,
+        include_summary: bool = True,
+        title: str = "Invoice Report / Reporte de Facturas",
+    ) -> str:
+        """
+        Export invoices to PDF format.
+        Exporta facturas a formato PDF.
+
+        Args / Argumentos:
+            invoices: List of invoices to export / Lista de facturas a exportar
+            output_path: Path for output file / Ruta del archivo de salida
+            include_summary: Include summary section / Incluir sección de resumen
+            title: Report title / Título del reporte
+
+        Returns / Retorna:
+            Path to created file / Ruta al archivo creado
+        """
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import landscape, letter
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import (
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+
+        if not invoices:
+            raise ExcelExporterError("No invoices provided for export")
+
+        output_file = Path(output_path)
+        if not output_file.suffix:
+            output_file = output_file.with_suffix(".pdf")
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        doc = SimpleDocTemplate(
+            str(output_file),
+            pagesize=landscape(letter),
+            rightMargin=0.5 * inch,
+            leftMargin=0.5 * inch,
+            topMargin=0.5 * inch,
+            bottomMargin=0.5 * inch,
+        )
+
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # Title
+        title_style = ParagraphStyle(
+            "CustomTitle",
+            parent=styles["Heading1"],
+            fontSize=16,
+            spaceAfter=20,
+        )
+        elements.append(Paragraph(title, title_style))
+
+        # Summary
+        if include_summary:
+            total_amount = sum(float(inv.total) for inv in invoices)
+            summary_data = [
+                ["Total Invoices / Total Facturas", str(len(invoices))],
+                [
+                    "Total Amount / Monto Total",
+                    f"{self.currency_symbol}{total_amount:,.2f}",
+                ],
+            ]
+            summary_table = Table(summary_data, colWidths=[3 * inch, 2 * inch])
+            summary_table.setStyle(
+                TableStyle([
+                    ("BACKGROUND", (0, 0), (0, -1), colors.lightgrey),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("PADDING", (0, 0), (-1, -1), 6),
+                ])
+            )
+            elements.append(summary_table)
+            elements.append(Spacer(1, 20))
+
+        # Invoice table
+        headers = ["#", "Date", "Customer", "Type", "Subtotal", "Tax", "Total"]
+        table_data = [headers]
+
+        for inv in invoices:
+            table_data.append([
+                inv.document_number,
+                inv.issue_date.isoformat(),
+                inv.customer_name[:30],  # Truncate long names
+                inv.invoice_type.value,
+                f"{self.currency_symbol}{float(inv.subtotal):,.2f}",
+                f"{self.currency_symbol}{float(inv.tax):,.2f}",
+                f"{self.currency_symbol}{float(inv.total):,.2f}",
+            ])
+
+        table = Table(table_data, repeatRows=1)
+        table.setStyle(
+            TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ("FONTSIZE", (0, 1), (-1, -1), 8),
+                ("ALIGN", (4, 1), (-1, -1), "RIGHT"),  # Align amounts right
+            ])
+        )
+        elements.append(table)
+
+        doc.build(elements)
+        logger.info("Exported %d invoices to PDF: %s", len(invoices), output_file)
+        return str(output_file)

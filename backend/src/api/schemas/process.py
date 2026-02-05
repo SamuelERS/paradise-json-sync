@@ -36,7 +36,7 @@ class ProcessRequest(BaseModel):
     """
 
     upload_id: str
-    output_format: Literal["xlsx", "csv", "pdf"] = "xlsx"
+    output_format: Literal["xlsx", "csv", "pdf", "json"] = "xlsx"
     options: ProcessOptions = Field(default_factory=ProcessOptions)
 
 
