@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from starlette.formparsers import MultiPartException
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,38 @@ def setup_exception_handlers(app: FastAPI) -> None:
             },
         )
 
+    @app.exception_handler(MultiPartException)
+    async def multipart_exception_handler(
+        request: Request,
+        exc: MultiPartException,
+    ) -> JSONResponse:
+        """
+        Handle Starlette MultiPartException for form parsing errors.
+        Maneja MultiPartException de Starlette para errores de parseo de formularios.
+        """
+        message = str(exc)
+
+        # Convert "Too many files" error to our custom format
+        # Convertir error "Too many files" a nuestro formato personalizado
+        if "Too many files" in message:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": "TOO_MANY_FILES",
+                    "message": message,
+                },
+            )
+
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "error": "FORM_PARSE_ERROR",
+                "message": message,
+            },
+        )
+
     @app.exception_handler(HTTPException)
     async def http_exception_handler(
         request: Request,
@@ -149,12 +182,25 @@ def setup_exception_handlers(app: FastAPI) -> None:
                 content={"success": False, **detail},
             )
 
+        # Convert Starlette's "Too many files" error to our custom format
+        # Convertir el error "Too many files" de Starlette a nuestro formato
+        detail_str = str(detail)
+        if "Too many files" in detail_str:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "success": False,
+                    "error": "TOO_MANY_FILES",
+                    "message": detail_str,
+                },
+            )
+
         return JSONResponse(
             status_code=exc.status_code,
             content={
                 "success": False,
                 "error": "HTTP_ERROR",
-                "message": str(detail),
+                "message": detail_str,
             },
         )
 
