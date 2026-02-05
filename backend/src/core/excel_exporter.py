@@ -803,58 +803,95 @@ class ExcelExporter:
             elements.append(Paragraph("Listado de Facturas", section_style))
             elements.append(list_table)
 
-        # ========== INDIVIDUAL INVOICE PAGES ==========
+        # ========== INDIVIDUAL INVOICE PAGES (COMPACT LAYOUT) ==========
+        # Compact style for fitting everything on one page
+        compact_style = TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("PADDING", (0, 0), (-1, -1), 3),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ])
+
         for idx, inv in enumerate(invoices):
             elements.append(PageBreak())
 
-            # Invoice header
-            header_text = f"FACTURA {idx + 1} de {len(invoices)}"
-            elements.append(Paragraph(header_text, title_style))
+            # Invoice header - compact
+            header_style = ParagraphStyle(
+                "CompactTitle",
+                parent=styles["Heading1"],
+                fontSize=14,
+                spaceAfter=8,
+                alignment=1,
+            )
+            elements.append(Paragraph(
+                f"FACTURA {idx + 1} de {len(invoices)}",
+                header_style
+            ))
 
-            # Document identification
-            elements.append(Paragraph("IDENTIFICACIÓN DEL DOCUMENTO", section_style))
-            id_data = [
-                ["Código de Generación", inv.document_number or "-"],
-                ["N° de Control", inv.control_number or "-"],
-                ["N° Documento Interno", inv.internal_doc_number or "-"],
-                ["Tipo de Documento", inv.invoice_type.value],
-                ["Fecha de Emisión", inv.issue_date.strftime("%Y-%m-%d")],
-                ["Hora de Emisión", inv.emission_time or "-"],
-                ["Condición de Pago", payment_text(inv.payment_condition)],
-                ["Moneda", inv.currency or "USD"],
+            # ===== ROW 1: Document Info (left) + Amounts (right) =====
+            # Document info - compact 4 rows
+            doc_data = [
+                ["DOCUMENTO", "", "", ""],
+                ["Código", (inv.document_number or "-")[:25], "Control", inv.control_number or "-"],
+                ["Fecha", f"{inv.issue_date.strftime('%Y-%m-%d')} {inv.emission_time or ''}", "Tipo", inv.invoice_type.value],
+                ["Pago", payment_text(inv.payment_condition), "Moneda", inv.currency or "USD"],
             ]
-            id_table = Table(id_data, colWidths=[2.5 * inch, 4.5 * inch])
-            id_table.setStyle(TableStyle([
+            doc_table = Table(doc_data, colWidths=[0.6 * inch, 1.5 * inch, 0.55 * inch, 1.0 * inch])
+            doc_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("SPAN", (0, 0), (-1, 0)),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F0F0F0")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("PADDING", (0, 0), (-1, -1), 6),
+                ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
+                ("BACKGROUND", (2, 1), (2, -1), colors.HexColor("#F0F0F0")),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("FONTNAME", (2, 1), (2, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("PADDING", (0, 0), (-1, -1), 3),
             ]))
-            elements.append(id_table)
-            elements.append(Spacer(1, 15))
 
-            # Issuer and Customer side by side
-            elements.append(Paragraph("EMISOR Y RECEPTOR", section_style))
+            # Amounts - compact
+            amt_data = [
+                ["MONTOS", ""],
+                ["Gravado", f"{self.currency_symbol}{float(inv.total_taxable):,.2f}"],
+                ["Exento", f"{self.currency_symbol}{float(inv.total_exempt):,.2f}"],
+                ["No Sujeto", f"{self.currency_symbol}{float(inv.total_non_subject):,.2f}"],
+                ["Descuento", f"{self.currency_symbol}{float(inv.total_discount):,.2f}"],
+                ["Subtotal", f"{self.currency_symbol}{float(inv.subtotal):,.2f}"],
+                ["IVA", f"{self.currency_symbol}{float(inv.tax):,.2f}"],
+                ["TOTAL", f"{self.currency_symbol}{float(inv.total):,.2f}"],
+            ]
+            amt_table = Table(amt_data, colWidths=[1.0 * inch, 1.2 * inch])
+            amt_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("SPAN", (0, 0), (-1, 0)),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FE")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, -1), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                ("BACKGROUND", (0, 1), (0, -2), colors.HexColor("#F0F0F0")),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -2), 7),
+                ("PADDING", (0, 0), (-1, -1), 3),
+                ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+            ]))
 
+            row1 = Table([[doc_table, amt_table]], colWidths=[3.8 * inch, 2.4 * inch])
+            row1.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+            elements.append(row1)
+            elements.append(Spacer(1, 6))
+
+            # ===== ROW 2: Issuer (left) + Customer (right) =====
             issuer_data = [
                 ["EMISOR", ""],
-                ["Nombre", inv.issuer_name or "-"],
+                ["Nombre", (inv.issuer_name or "-")[:30]],
                 ["NIT", inv.issuer_nit or "-"],
                 ["NRC", inv.issuer_nrc or "-"],
             ]
-            customer_data = [
-                ["CLIENTE / RECEPTOR", ""],
-                ["Nombre", inv.customer_name or "-"],
-                ["NIT / DUI", inv.customer_id or "-"],
-                ["Tipo Documento", inv.customer_doc_type or "-"],
-                ["NRC", inv.customer_nrc or "-"],
-                ["Dirección", (inv.customer_address or "-")[:50]],
-                ["Teléfono", inv.customer_phone or "-"],
-                ["Correo", inv.customer_email or "-"],
-            ]
-
-            issuer_table = Table(issuer_data, colWidths=[1.2 * inch, 2.2 * inch])
+            issuer_table = Table(issuer_data, colWidths=[0.7 * inch, 2.3 * inch])
             issuer_table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -862,11 +899,20 @@ class ExcelExporter:
                 ("SPAN", (0, 0), (-1, 0)),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
                 ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("PADDING", (0, 0), (-1, -1), 5),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("PADDING", (0, 0), (-1, -1), 3),
             ]))
 
-            customer_table = Table(customer_data, colWidths=[1.2 * inch, 2.2 * inch])
+            customer_data = [
+                ["CLIENTE", ""],
+                ["Nombre", (inv.customer_name or "-")[:30]],
+                ["NIT/DUI", inv.customer_id or "-"],
+                ["NRC", inv.customer_nrc or "-"],
+                ["Dirección", (inv.customer_address or "-")[:35]],
+                ["Tel/Email", f"{inv.customer_phone or '-'} / {(inv.customer_email or '-')[:20]}"],
+            ]
+            customer_table = Table(customer_data, colWidths=[0.7 * inch, 2.5 * inch])
             customer_table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -874,76 +920,35 @@ class ExcelExporter:
                 ("SPAN", (0, 0), (-1, 0)),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
                 ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("PADDING", (0, 0), (-1, -1), 5),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("PADDING", (0, 0), (-1, -1), 3),
             ]))
 
-            parties_table = Table(
-                [[issuer_table, customer_table]],
-                colWidths=[3.5 * inch, 3.5 * inch]
-            )
-            parties_table.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
-            elements.append(parties_table)
-            elements.append(Spacer(1, 15))
+            row2 = Table([[issuer_table, customer_table]], colWidths=[3.2 * inch, 3.4 * inch])
+            row2.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+            elements.append(row2)
+            elements.append(Spacer(1, 6))
 
-            # Amounts section
-            elements.append(Paragraph("MONTOS", section_style))
-            amounts_data = [
-                ["Concepto", "Valor"],
-                ["Total Gravado", f"{self.currency_symbol}{float(inv.total_taxable):,.2f}"],
-                ["Total Exento", f"{self.currency_symbol}{float(inv.total_exempt):,.2f}"],
-                ["Total No Sujeto", f"{self.currency_symbol}{float(inv.total_non_subject):,.2f}"],
-                ["Descuento", f"{self.currency_symbol}{float(inv.total_discount):,.2f}"],
-                ["Subtotal", f"{self.currency_symbol}{float(inv.subtotal):,.2f}"],
-                ["IVA", f"{self.currency_symbol}{float(inv.tax):,.2f}"],
-                ["TOTAL", f"{self.currency_symbol}{float(inv.total):,.2f}"],
+            # ===== ROW 3: Total in words + Additional info =====
+            extra_data = [
+                ["INFORMACIÓN ADICIONAL", "", ""],
+                ["Total en Letras", (inv.total_in_words or "-")[:50], ""],
+                ["Vendedor", inv.seller_name or "-", ""],
+                ["Sello", (inv.tax_seal or "-")[:45], ""],
+                ["Archivo", (inv.source_file or "-")[:40], ""],
             ]
-            amounts_table = Table(amounts_data, colWidths=[3 * inch, 2 * inch])
-            amounts_table.setStyle(TableStyle([
+            extra_table = Table(extra_data, colWidths=[1.0 * inch, 3.5 * inch, 2.0 * inch])
+            extra_table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FE")),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, -1), (-1, -1), 11),
+                ("SPAN", (0, 0), (-1, 0)),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
-                ("FONTSIZE", (0, 0), (-1, -2), 9),
-                ("PADDING", (0, 0), (-1, -1), 6),
-                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-            ]))
-            elements.append(amounts_table)
-            elements.append(Spacer(1, 10))
-
-            # Total in words
-            if inv.total_in_words:
-                words_data = [["Total en Letras", inv.total_in_words]]
-                words_table = Table(words_data, colWidths=[1.5 * inch, 5.5 * inch])
-                words_table.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#F0F0F0")),
-                    ("FONTNAME", (0, 0), (0, 0), "Helvetica-Bold"),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
-                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("PADDING", (0, 0), (-1, -1), 5),
-                ]))
-                elements.append(words_table)
-                elements.append(Spacer(1, 10))
-
-            # Additional info
-            elements.append(Paragraph("INFORMACIÓN ADICIONAL", section_style))
-            extra_data = [
-                ["Vendedor", inv.seller_name or "-"],
-                ["Sello de Recepción", (inv.tax_seal or "-")[:60]],
-                ["Archivo Origen", inv.source_file or "-"],
-            ]
-            extra_table = Table(extra_data, colWidths=[2 * inch, 5 * inch])
-            extra_table.setStyle(TableStyle([
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F0F0F0")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("PADDING", (0, 0), (-1, -1), 5),
+                ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#F0F0F0")),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("PADDING", (0, 0), (-1, -1), 3),
             ]))
             elements.append(extra_table)
 
