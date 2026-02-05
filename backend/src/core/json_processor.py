@@ -19,7 +19,7 @@ import json
 import logging
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
 from src.models.invoice import Invoice, InvoiceItem, InvoiceType
 
@@ -35,8 +35,8 @@ class JSONProcessorError(Exception):
     def __init__(
         self,
         message: str,
-        file_path: str | None = None,
-        original_error: Exception | None = None,
+        file_path: Optional[str] = None,
+        original_error: Optional[Exception] = None,
     ) -> None:
         self.message = message
         self.file_path = file_path
@@ -120,6 +120,9 @@ class JSONProcessor:
                 original_error=e,
             ) from e
 
+        # Normalize nested format to flat format if needed
+        data = self._normalize_nested_format(data)
+
         if not self.validate_json_structure(data):
             raise JSONProcessorError(
                 "Invalid JSON structure",
@@ -178,6 +181,53 @@ class JSONProcessor:
         )
 
         return invoices
+
+    def _normalize_nested_format(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Normalize nested JSON format to flat format.
+        Normaliza formato JSON anidado a formato plano.
+
+        Supports formats like:
+        - factura.numero -> document_number
+        - factura.fecha -> issue_date
+        - receptor.razonSocial -> customer_name
+        - totales.total -> total
+        """
+        # Check if it's the nested format (has 'factura' key)
+        if "factura" not in data:
+            return data  # Already flat format
+
+        logger.info("Detected nested invoice format, normalizing...")
+        factura = data.get("factura", {})
+        receptor = data.get("receptor", {})
+        emisor = data.get("emisor", {})
+        totales = data.get("totales", {})
+        items_raw = data.get("items", [])
+
+        # Map nested to flat format
+        normalized = {
+            "document_number": factura.get("numero", ""),
+            "issue_date": factura.get("fecha", ""),
+            "invoice_type": factura.get("tipoComprobante", "factura"),
+            "customer_name": receptor.get("razonSocial", ""),
+            "customer_id": receptor.get("ruc", ""),
+            "subtotal": totales.get("subtotal", 0),
+            "tax": totales.get("igv", totales.get("iva", 0)),
+            "total": totales.get("total", 0),
+        }
+
+        # Normalize items
+        normalized_items = []
+        for item in items_raw:
+            normalized_items.append({
+                "description": item.get("descripcion", ""),
+                "quantity": item.get("cantidad", 1),
+                "unit_price": item.get("precioUnitario", 0),
+                "total": item.get("total", item.get("subtotal", 0)),
+            })
+        normalized["items"] = normalized_items
+
+        return normalized
 
     def validate_json_structure(self, data: dict[str, Any]) -> bool:
         """

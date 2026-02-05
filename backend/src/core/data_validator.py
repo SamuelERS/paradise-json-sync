@@ -18,6 +18,7 @@ Este módulo provee:
 import logging
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import List, Optional
 
 from src.models.invoice import Invoice
 
@@ -41,7 +42,7 @@ class DataValidator:
     def __init__(
         self,
         tolerance: Decimal = Decimal("0.01"),
-        max_date_range_days: int = 365,
+        max_date_range_days: int = 1825,  # 5 years / 5 años
     ) -> None:
         """
         Initialize the validator.
@@ -128,9 +129,9 @@ class DataValidator:
 
     def validate_date_range(
         self,
-        invoices: list[Invoice],
-        start_date: date | None = None,
-        end_date: date | None = None,
+        invoices: List[Invoice],
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
     ) -> bool:
         """
         Validate that all invoices fall within acceptable date range.

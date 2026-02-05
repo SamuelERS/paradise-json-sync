@@ -7,6 +7,7 @@ Esquemas para endpoint de estado.
 """
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -25,7 +26,7 @@ class JobResult(BaseModel):
     total_invoices: int
     total_amount: float
     output_file: str
-    output_path: str | None = None
+    output_path: Optional[str] = None
 
 
 class JobData(BaseModel):
@@ -47,12 +48,12 @@ class JobData(BaseModel):
     job_id: str
     status: str
     progress: int = 0
-    current_step: str | None = None
-    result: JobResult | None = None
-    error: str | None = None
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
-    failed_at: datetime | None = None
+    current_step: Optional[str] = None
+    result: Optional[JobResult] = None
+    error: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
 
 
 class StatusResponse(BaseModel):

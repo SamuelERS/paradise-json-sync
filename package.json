@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && python3 -m uvicorn src.main:app --reload --port 8000",
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "lint": "npm run lint:frontend && npm run lint:e2e",
@@ -29,7 +29,7 @@
     "test:coverage:backend": "cd backend && pytest --cov=app --cov-report=html --cov-report=term",
     "install:all": "npm install && npm run install:frontend && npm run install:backend && npm run install:e2e",
     "install:frontend": "cd frontend && npm install",
-    "install:backend": "cd backend && pip install -r requirements.txt -r requirements-dev.txt",
+    "install:backend": "cd backend && pip3 install -r requirements.txt -r requirements-dev.txt",
     "install:e2e": "cd e2e && npm install && npx playwright install",
     "setup:e2e": "cd e2e && npx playwright install --with-deps"
   },

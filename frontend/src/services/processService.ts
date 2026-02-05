@@ -37,14 +37,30 @@ export interface ProcessResponse {
 }
 
 /**
+ * Backend Process Response / Respuesta del Backend de Proceso
+ *
+ * EN: Actual response structure from the backend process endpoint.
+ * ES: Estructura de respuesta real del endpoint de proceso del backend.
+ */
+interface BackendProcessResponse {
+  success: boolean;
+  message: string;
+  data: {
+    job_id: string;
+    status: string;
+    estimated_time: number;
+    created_at: string;
+  };
+}
+
+/**
  * Process Request Interface / Interfaz de Petición de Proceso
  *
  * EN: Request structure for the process endpoint.
  * ES: Estructura de petición para el endpoint de proceso.
  */
 interface ProcessRequest {
-  jobId: string;
-  options: ProcessOptions;
+  upload_id: string;
 }
 
 /**
@@ -53,26 +69,34 @@ interface ProcessRequest {
  * EN: Starts the processing job for uploaded files.
  * ES: Inicia el trabajo de procesamiento para archivos cargados.
  *
- * @param jobId - Job identifier from upload / Identificador del trabajo de carga
- * @param options - Processing options / Opciones de procesamiento
+ * @param uploadId - Upload identifier from upload step / Identificador de carga
+ * @param _options - Processing options (reserved for future use) / Opciones de procesamiento
  * @returns Promise with process response / Promesa con respuesta de proceso
  * @throws Error if process fails to start / Error si falla al iniciar proceso
  */
 export async function startProcess(
-  jobId: string,
-  options: ProcessOptions = getDefaultOptions()
+  uploadId: string,
+  _options: ProcessOptions = getDefaultOptions()
 ): Promise<ProcessResponse> {
   const request: ProcessRequest = {
-    jobId,
-    options,
+    upload_id: uploadId,
   };
 
-  const response = await api.post<ProcessResponse>(
+  const response = await api.post<BackendProcessResponse>(
     API_ENDPOINTS.PROCESS,
     request
   );
 
-  return response.data;
+  // EN: Transform backend response to frontend format
+  // ES: Transformar respuesta del backend al formato del frontend
+  const backendData = response.data;
+  return {
+    success: backendData.success,
+    jobId: backendData.data.job_id,
+    status: backendData.data.status,
+    message: backendData.message,
+    estimatedTime: backendData.data.estimated_time,
+  };
 }
 
 /**

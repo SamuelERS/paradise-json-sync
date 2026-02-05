@@ -19,6 +19,7 @@ import logging
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -140,7 +141,7 @@ class Invoice(BaseModel):
         max_length=200,
         description="Customer name / Nombre del cliente",
     )
-    customer_id: str | None = Field(
+    customer_id: Optional[str] = Field(
         default=None,
         max_length=50,
         description="Customer tax ID / Identificación fiscal",
@@ -164,14 +165,14 @@ class Invoice(BaseModel):
         ge=0,
         description="Total amount / Monto total",
     )
-    source_file: str | None = Field(
+    source_file: Optional[str] = Field(
         default=None,
         description="Source file path / Ruta del archivo fuente",
     )
 
     @field_validator("issue_date", mode="before")
     @classmethod
-    def parse_date(cls, value: str | date) -> date:
+    def parse_date(cls, value: Union[str, date]) -> date:
         """
         Parse date from string if needed.
         Parsea la fecha desde string si es necesario.
@@ -247,8 +248,8 @@ class InvoiceValidationError(Exception):
     def __init__(
         self,
         message: str,
-        field: str | None = None,
-        value: str | None = None,
+        field: Optional[str] = None,
+        value: Optional[str] = None,
     ) -> None:
         self.message = message
         self.field = field

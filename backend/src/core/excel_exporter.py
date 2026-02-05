@@ -18,6 +18,7 @@ Este módulo provee:
 import logging
 from decimal import Decimal
 from pathlib import Path
+from typing import List, Optional
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -37,8 +38,8 @@ class ExcelExporterError(Exception):
     def __init__(
         self,
         message: str,
-        output_path: str | None = None,
-        original_error: Exception | None = None,
+        output_path: Optional[str] = None,
+        original_error: Optional[Exception] = None,
     ) -> None:
         self.message = message
         self.output_path = output_path

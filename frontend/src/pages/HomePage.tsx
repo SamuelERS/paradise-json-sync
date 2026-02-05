@@ -4,107 +4,174 @@
  * Main page with file upload and processing workflow.
  * Página principal con carga de archivos y flujo de procesamiento.
  */
-import { useState, useCallback } from 'react';
-import type { FileInfo, ProcessResults, AppStatus } from '../types';
+import { useState, useCallback, useEffect } from 'react';
+import type { ProcessResults, AppStatus } from '../types';
 import { MainLayout } from '../components/layout';
 import { Card, Button, Alert } from '../components/common';
 import { Dropzone, FileList, UploadProgress } from '../components/upload';
 import { ResultsPanel } from '../components/results';
-
-function generateFileId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function getFileType(file: File): 'json' | 'pdf' {
-  return file.name.toLowerCase().endsWith('.json') ? 'json' : 'pdf';
-}
+import { useDownload } from '../hooks/useDownload';
+import { useUpload } from '../hooks/useUpload';
+import { useProcess } from '../hooks/useProcess';
 
 export function HomePage() {
-  const [status, setStatus] = useState<AppStatus>('idle');
-  const [files, setFiles] = useState<FileInfo[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [currentFile, setCurrentFile] = useState('');
+  const [appStatus, setAppStatus] = useState<AppStatus>('idle');
   const [results, setResults] = useState<ProcessResults | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
 
-  const handleFilesSelected = useCallback((newFiles: File[]) => {
-    const fileInfos: FileInfo[] = newFiles.map((file) => ({
-      file,
-      id: generateFileId(),
-      name: file.name,
-      size: file.size,
-      type: getFileType(file),
-      status: 'pending',
-    }));
-    setFiles((prev) => [...prev, ...fileInfos]);
-    setStatus('files_selected');
-    setError(null);
-  }, []);
+  // Hooks for real backend operations
+  const {
+    files,
+    isUploading,
+    uploadProgress,
+    error: uploadError,
+    addFiles,
+    removeFile,
+    clearFiles,
+    clearError: clearUploadError,
+    upload,
+  } = useUpload();
 
-  const handleRemoveFile = useCallback((index: number) => {
-    setFiles((prev) => {
-      const newFiles = prev.filter((_, i) => i !== index);
-      if (newFiles.length === 0) {
-        setStatus('idle');
+  const {
+    isProcessing,
+    progress: processProgress,
+    currentStep,
+    error: processError,
+    status: processStatus,
+    startProcess,
+    reset: resetProcess,
+  } = useProcess();
+
+  const {
+    downloadExcelFile,
+    downloadPdfFile,
+    error: downloadError,
+  } = useDownload();
+
+  // Combine progress from upload and process phases
+  const totalProgress = isUploading
+    ? uploadProgress * 0.3 // Upload is 30% of total
+    : isProcessing
+      ? 30 + processProgress * 0.7 // Process is 70% of total
+      : 0;
+
+  // Update app status based on hook states
+  useEffect(() => {
+    if (isUploading) {
+      setAppStatus('uploading');
+    } else if (isProcessing) {
+      setAppStatus('processing');
+    } else if (processStatus?.status === 'completed') {
+      setAppStatus('completed');
+      const errorCount = processStatus.errors?.length || 0;
+      setResults({
+        totalFiles: files.length,
+        successCount: files.length - errorCount,
+        errorCount,
+        errors: processStatus.errors?.map((e) => ({
+          fileName: e.fileName,
+          message: e.message,
+          code: e.errorCode,
+          line: e.line,
+        })) || [],
+        outputUrl: processStatus.downloadUrl || `/api/download/excel/${jobId}`,
+      });
+    } else if (processStatus?.status === 'failed') {
+      setAppStatus('error');
+      setError(processStatus.errors?.map((e) => e.message).join(', ') || 'Error en el procesamiento');
+    }
+  }, [isUploading, isProcessing, processStatus, files.length, jobId]);
+
+  // Consolidate errors
+  useEffect(() => {
+    const combinedError = uploadError || processError || downloadError;
+    if (combinedError) {
+      setError(combinedError);
+    }
+  }, [uploadError, processError, downloadError]);
+
+  const handleFilesSelected = useCallback(
+    (newFiles: File[]) => {
+      addFiles(newFiles);
+      setAppStatus('files_selected');
+      setError(null);
+    },
+    [addFiles]
+  );
+
+  const handleRemoveFile = useCallback(
+    (index: number) => {
+      const fileToRemove = files[index];
+      if (fileToRemove) {
+        removeFile(fileToRemove.id);
+        if (files.length <= 1) {
+          setAppStatus('idle');
+        }
       }
-      return newFiles;
-    });
-  }, []);
+    },
+    [files, removeFile]
+  );
 
   const handleProcess = useCallback(async () => {
     if (files.length === 0) return;
-    setStatus('uploading');
-    setProgress(0);
+    setError(null);
     setResults(undefined);
+
     try {
-      for (let i = 0; i < files.length; i++) {
-        setCurrentFile(files[i].name);
-        setFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' } : f))
-        );
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setProgress(((i + 1) / files.length) * 50);
-        setFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: 'success' } : f))
-        );
-      }
-      setStatus('processing');
-      setCurrentFile('Consolidando datos...');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setProgress(100);
-      setResults({
-        totalFiles: files.length,
-        successCount: files.length,
-        errorCount: 0,
-        errors: [],
-        outputUrl: '/download/result.xlsx',
-        duration: 1500,
-      });
-      setStatus('completed');
-    } catch {
-      setStatus('error');
-      setError('Ocurrió un error durante el procesamiento.');
+      // Step 1: Upload files to backend (returns upload_id)
+      const uploadId = await upload();
+
+      // Step 2: Start processing - returns the REAL job_id from backend
+      const realJobId = await startProcess(uploadId);
+      setJobId(realJobId);
+    } catch (err) {
+      setAppStatus('error');
+      setError(err instanceof Error ? err.message : 'Error durante el procesamiento');
     }
-  }, [files]);
+  }, [files.length, upload, startProcess]);
 
-  const handleDownloadExcel = useCallback(() => {
-    console.log('Downloading Excel...');
-  }, []);
+  const handleDownloadExcel = useCallback(async () => {
+    if (!jobId) {
+      setError('No hay resultados para descargar.');
+      return;
+    }
+    try {
+      await downloadExcelFile(jobId, `consolidado_${jobId}.xlsx`);
+    } catch {
+      setError('Error al descargar el archivo Excel.');
+    }
+  }, [jobId, downloadExcelFile]);
 
-  const handleDownloadPdf = useCallback(() => {
-    console.log('Downloading PDF...');
-  }, []);
+  const handleDownloadPdf = useCallback(async () => {
+    if (!jobId) {
+      setError('No hay resultados para descargar.');
+      return;
+    }
+    try {
+      await downloadPdfFile(jobId, `consolidado_${jobId}.pdf`);
+    } catch {
+      setError('Error al descargar el archivo PDF.');
+    }
+  }, [jobId, downloadPdfFile]);
 
   const handleReset = useCallback(() => {
-    setStatus('idle');
-    setFiles([]);
-    setProgress(0);
-    setCurrentFile('');
+    setAppStatus('idle');
+    clearFiles();
+    resetProcess();
     setResults(undefined);
     setError(null);
-  }, []);
+    setJobId(null);
+    clearUploadError();
+  }, [clearFiles, resetProcess, clearUploadError]);
 
-  const isProcessing = status === 'uploading' || status === 'processing';
+  const isBusy = isUploading || isProcessing;
+
+  // Convert FileInfo from useUpload to the format expected by FileList
+  const filesForDisplay = files.map((f) => ({
+    ...f,
+    type: f.name.toLowerCase().endsWith('.json') ? 'json' as const : 'pdf' as const,
+  }));
 
   return (
     <MainLayout>
@@ -126,21 +193,21 @@ export function HomePage() {
               onClose={() => setError(null)}
             />
           )}
-          {!isProcessing && status !== 'completed' && (
+          {!isBusy && appStatus !== 'completed' && (
             <Card>
               <div className="space-y-6">
                 <Dropzone
                   onFilesSelected={handleFilesSelected}
-                  disabled={isProcessing}
+                  disabled={isBusy}
                 />
-                <FileList files={files} onRemove={handleRemoveFile} />
+                <FileList files={filesForDisplay} onRemove={handleRemoveFile} />
                 {files.length > 0 && (
                   <div className="flex justify-center pt-4">
                     <Button
                       variant="primary"
                       size="lg"
                       onClick={handleProcess}
-                      disabled={isProcessing}
+                      disabled={isBusy}
                     >
                       Procesar {files.length} archivo{files.length !== 1 ? 's' : ''}
                     </Button>
@@ -149,18 +216,18 @@ export function HomePage() {
               </div>
             </Card>
           )}
-          {isProcessing && (
+          {isBusy && (
             <UploadProgress
               totalFiles={files.length}
               processedFiles={files.filter((f) => f.status === 'success').length}
-              currentFile={currentFile}
-              progress={progress}
-              status={status === 'uploading' ? 'uploading' : 'processing'}
+              currentFile={currentStep || (isUploading ? 'Subiendo archivos...' : 'Procesando...')}
+              progress={totalProgress}
+              status={isUploading ? 'uploading' : 'processing'}
             />
           )}
-          {(status === 'completed' || status === 'error') && (
+          {(appStatus === 'completed' || appStatus === 'error') && (
             <ResultsPanel
-              status={status === 'error' ? 'error' : 'completed'}
+              status={appStatus === 'error' ? 'error' : 'completed'}
               results={results}
               onDownloadExcel={handleDownloadExcel}
               onDownloadPdf={handleDownloadPdf}

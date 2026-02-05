@@ -48,8 +48,8 @@ export interface UseProcessReturn {
   error: string | null;
   /** EN: Full status response | ES: Respuesta de estado completa */
   status: StatusResponse | null;
-  /** EN: Start processing | ES: Iniciar procesamiento */
-  startProcess: (jobId: string, options?: ProcessOptions) => Promise<void>;
+  /** EN: Start processing, returns real job_id | ES: Iniciar procesamiento, retorna job_id real */
+  startProcess: (uploadId: string, options?: ProcessOptions) => Promise<string>;
   /** EN: Cancel processing | ES: Cancelar procesamiento */
   cancel: () => void;
   /** EN: Reset state | ES: Reiniciar estado */
@@ -112,12 +112,15 @@ export function useProcess(): UseProcessReturn {
   /**
    * Handle Polling Error / Manejar Error de Sondeo
    *
-   * EN: Handles errors during status polling.
-   * ES: Maneja errores durante el sondeo de estado.
+   * EN: Handles errors during status polling. Sets isProcessing to false
+   *     so the UI can recover from errors.
+   * ES: Maneja errores durante el sondeo de estado. Pone isProcessing en false
+   *     para que la UI pueda recuperarse de errores.
    */
   const handlePollingError = useCallback((error: Error): void => {
     setState((prev) => ({
       ...prev,
+      isProcessing: false,
       error: formatErrorMessage(error),
     }));
   }, []);
@@ -126,10 +129,12 @@ export function useProcess(): UseProcessReturn {
    * Start Process / Iniciar Proceso
    *
    * EN: Starts the processing job and begins status polling.
+   *     Returns the real job_id from the backend.
    * ES: Inicia el trabajo de procesamiento y comienza el sondeo de estado.
+   *     Retorna el job_id real del backend.
    */
   const startProcess = useCallback(
-    async (jobId: string, options?: ProcessOptions): Promise<void> => {
+    async (uploadId: string, options?: ProcessOptions): Promise<string> => {
       // EN: Cancel any existing polling
       // ES: Cancelar cualquier sondeo existente
       if (stopPollingRef.current) {
@@ -147,15 +152,20 @@ export function useProcess(): UseProcessReturn {
 
       try {
         const processOptions = options || getDefaultOptions();
-        await startProcessService(jobId, processOptions);
+        // EN: Capture the response to get the real job_id
+        // ES: Capturar la respuesta para obtener el job_id real
+        const processResponse = await startProcessService(uploadId, processOptions);
+        const realJobId = processResponse.jobId;
 
-        // EN: Start polling for status updates
-        // ES: Iniciar sondeo de actualizaciones de estado
+        // EN: Start polling for status updates using the REAL job_id
+        // ES: Iniciar sondeo de actualizaciones de estado usando el job_id REAL
         stopPollingRef.current = pollStatus(
-          jobId,
+          realJobId,
           handleStatusUpdate,
           handlePollingError
         );
+
+        return realJobId;
       } catch (error) {
         setState((prev) => ({
           ...prev,

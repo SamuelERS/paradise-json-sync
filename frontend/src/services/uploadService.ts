@@ -23,10 +23,27 @@ export interface FileDetail {
 }
 
 /**
+ * Backend Upload Response Interface / Interfaz de Respuesta del Backend
+ *
+ * EN: Actual response structure from the backend upload endpoint.
+ * ES: Estructura de respuesta real del endpoint de carga del backend.
+ */
+interface BackendUploadResponse {
+  success: boolean;
+  message: string;
+  data: {
+    upload_id: string;
+    files: Array<{ name: string; size: number; type: string }>;
+    total_files: number;
+    expires_at: string;
+  };
+}
+
+/**
  * Upload Response Interface / Interfaz de Respuesta de Carga
  *
- * EN: Response structure from the upload endpoint.
- * ES: Estructura de respuesta del endpoint de carga.
+ * EN: Normalized response structure for the frontend.
+ * ES: Estructura de respuesta normalizada para el frontend.
  */
 export interface UploadResponse {
   success: boolean;
@@ -77,7 +94,7 @@ export async function uploadFiles(
 
   // EN: Upload with progress tracking
   // ES: Cargar con seguimiento de progreso
-  const response = await formDataApi.post<UploadResponse>(
+  const response = await formDataApi.post<BackendUploadResponse>(
     API_ENDPOINTS.UPLOAD,
     formData,
     {
@@ -95,7 +112,21 @@ export async function uploadFiles(
     }
   );
 
-  return response.data;
+  // EN: Transform backend response to frontend format
+  // ES: Transformar respuesta del backend al formato del frontend
+  const backendData = response.data;
+  return {
+    success: backendData.success,
+    jobId: backendData.data.upload_id, // upload_id becomes jobId for the frontend
+    filesReceived: backendData.data.total_files,
+    filesDetail: backendData.data.files.map((f) => ({
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      status: 'accepted' as const,
+    })),
+    message: backendData.message,
+  };
 }
 
 /**

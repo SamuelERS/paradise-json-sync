@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class JobService:
         job_id: str,
         upload_id: str,
         output_format: str,
-        options: dict | None = None,
+        options: Optional[dict] = None,
     ) -> dict:
         """
         Create a new processing job.
@@ -74,7 +75,7 @@ class JobService:
 
         return job
 
-    async def get_job(self, job_id: str) -> dict | None:
+    async def get_job(self, job_id: str) -> Optional[dict]:
         """
         Get job by ID.
         Obtiene trabajo por ID.
@@ -91,7 +92,7 @@ class JobService:
         self,
         job_id: str,
         progress: int,
-        step: str | None = None,
+        step: Optional[str] = None,
     ) -> bool:
         """
         Update job progress.
@@ -218,7 +219,7 @@ class JobService:
 
         return True
 
-    def list_jobs(self, status: str | None = None) -> list[dict]:
+    def list_jobs(self, status: Optional[str] = None) -> list[dict]:
         """
         List all jobs, optionally filtered by status.
         Lista todos los trabajos, opcionalmente filtrados por estado.

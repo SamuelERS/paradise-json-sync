@@ -10,6 +10,7 @@ import logging
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 import aiofiles
 
@@ -30,7 +31,7 @@ class FileService:
         _uploads: In-memory upload registry / Registro de uploads en memoria
     """
 
-    def __init__(self, upload_dir: Path | None = None) -> None:
+    def __init__(self, upload_dir: Optional[Path] = None) -> None:
         """
         Initialize the file service.
         Inicializa el servicio de archivos.
@@ -95,7 +96,7 @@ class FileService:
 
         return saved_files
 
-    async def get_upload(self, upload_id: str) -> dict | None:
+    async def get_upload(self, upload_id: str) -> Optional[dict]:
         """
         Get upload information.
         Obtiene información de un upload.

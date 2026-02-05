@@ -17,6 +17,7 @@ Este módulo provee:
 
 import logging
 from pathlib import Path
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,8 @@ class PDFProcessorError(Exception):
     def __init__(
         self,
         message: str,
-        file_path: str | None = None,
-        original_error: Exception | None = None,
+        file_path: Optional[str] = None,
+        original_error: Optional[Exception] = None,
     ) -> None:
         self.message = message
         self.file_path = file_path
@@ -59,7 +60,7 @@ class PDFProcessor:
                     Directorio por defecto para PDFs unidos
     """
 
-    def __init__(self, output_dir: str | None = None) -> None:
+    def __init__(self, output_dir: Optional[str] = None) -> None:
         """
         Initialize the PDF processor.
         Inicializa el procesador PDF.
