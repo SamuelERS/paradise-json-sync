@@ -1,0 +1,57 @@
+{
+  "factura": {
+    "numero": "FAC-2024-001234",
+    "fecha": "2024-01-15",
+    "fechaVencimiento": "2024-02-15",
+    "tipoComprobante": "factura",
+    "moneda": "USD"
+  },
+  "emisor": {
+    "razonSocial": "Empresa Ejemplo S.A.",
+    "ruc": "20123456789",
+    "direccion": "Av. Principal 123, Lima, Peru",
+    "telefono": "+51 1 234 5678",
+    "email": "facturacion@ejemplo.com"
+  },
+  "receptor": {
+    "razonSocial": "Cliente Demo S.R.L.",
+    "ruc": "20987654321",
+    "direccion": "Jr. Secundario 456, Lima, Peru",
+    "telefono": "+51 1 876 5432",
+    "email": "pagos@clientedemo.com"
+  },
+  "items": [
+    {
+      "codigo": "PROD-001",
+      "descripcion": "Servicio de Consultoria - Enero 2024",
+      "cantidad": 40,
+      "unidadMedida": "horas",
+      "precioUnitario": 75.00,
+      "subtotal": 3000.00,
+      "descuento": 0,
+      "igv": 540.00,
+      "total": 3540.00
+    },
+    {
+      "codigo": "PROD-002",
+      "descripcion": "Licencia de Software Anual",
+      "cantidad": 1,
+      "unidadMedida": "unidad",
+      "precioUnitario": 1200.00,
+      "subtotal": 1200.00,
+      "descuento": 120.00,
+      "igv": 194.40,
+      "total": 1274.40
+    }
+  ],
+  "totales": {
+    "subtotal": 4200.00,
+    "descuentoTotal": 120.00,
+    "baseImponible": 4080.00,
+    "igv": 734.40,
+    "total": 4814.40
+  },
+  "observaciones": "Pago a 30 dias. Factura valida para efectos tributarios.",
+  "metodoPago": "transferencia_bancaria",
+  "cuentaBancaria": "193-123456-0-01"
+}

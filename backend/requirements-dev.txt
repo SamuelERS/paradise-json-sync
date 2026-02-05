@@ -1,0 +1,20 @@
+# Development and Testing Dependencies
+# Dependencias de Desarrollo y Testing
+
+# Testing / Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
+
+# Code Quality / Calidad de Código
+black>=24.1.0
+ruff>=0.1.0
+mypy>=1.8.0
+
+# Pre-commit hooks / Hooks de pre-commit
+pre-commit>=3.6.0
+
+# Type stubs / Stubs de tipos
+types-python-dateutil>=2.8.0
+pandas-stubs>=2.0.0

@@ -1,0 +1,79 @@
+{
+  "factura": {
+    "numero": "FAC-2024-001235",
+    "fecha": "2024-01-20",
+    "fechaVencimiento": "2024-02-20",
+    "tipoComprobante": "factura",
+    "moneda": "PEN"
+  },
+  "emisor": {
+    "razonSocial": "Distribuidora Nacional E.I.R.L.",
+    "ruc": "20111222333",
+    "direccion": "Calle Comercio 789, Arequipa, Peru",
+    "telefono": "+51 54 123 456",
+    "email": "ventas@distribuidora.com"
+  },
+  "receptor": {
+    "razonSocial": "Tienda Minorista SAC",
+    "ruc": "20444555666",
+    "direccion": "Av. Mercado 321, Arequipa, Peru",
+    "telefono": "+51 54 654 321",
+    "email": "compras@tiendaminorista.com"
+  },
+  "items": [
+    {
+      "codigo": "MAT-100",
+      "descripcion": "Papel Bond A4 75gr - Paquete 500 hojas",
+      "cantidad": 50,
+      "unidadMedida": "paquete",
+      "precioUnitario": 18.50,
+      "subtotal": 925.00,
+      "descuento": 46.25,
+      "igv": 158.18,
+      "total": 1036.93
+    },
+    {
+      "codigo": "MAT-101",
+      "descripcion": "Lapiceros Azul - Caja 12 unidades",
+      "cantidad": 20,
+      "unidadMedida": "caja",
+      "precioUnitario": 15.00,
+      "subtotal": 300.00,
+      "descuento": 0,
+      "igv": 54.00,
+      "total": 354.00
+    },
+    {
+      "codigo": "MAT-102",
+      "descripcion": "Folders Manila A4 - Paquete 25",
+      "cantidad": 30,
+      "unidadMedida": "paquete",
+      "precioUnitario": 12.00,
+      "subtotal": 360.00,
+      "descuento": 18.00,
+      "igv": 61.56,
+      "total": 403.56
+    },
+    {
+      "codigo": "MAT-103",
+      "descripcion": "Clips Metalicos - Caja 100",
+      "cantidad": 40,
+      "unidadMedida": "caja",
+      "precioUnitario": 3.50,
+      "subtotal": 140.00,
+      "descuento": 0,
+      "igv": 25.20,
+      "total": 165.20
+    }
+  ],
+  "totales": {
+    "subtotal": 1725.00,
+    "descuentoTotal": 64.25,
+    "baseImponible": 1660.75,
+    "igv": 298.94,
+    "total": 1959.69
+  },
+  "observaciones": "Entrega en almacen del cliente. Pago al contado.",
+  "metodoPago": "efectivo",
+  "cuentaBancaria": null
+}
