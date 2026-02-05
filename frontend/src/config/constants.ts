@@ -21,10 +21,10 @@ export const API_BASE_URL: string =
 /**
  * API Timeout / Tiempo de espera de la API
  *
- * EN: Maximum time in milliseconds to wait for API responses (30 seconds).
- * ES: Tiempo máximo en milisegundos para esperar respuestas de la API (30 segundos).
+ * EN: Maximum time in milliseconds to wait for API responses (3 minutes).
+ * ES: Tiempo máximo en milisegundos para esperar respuestas de la API (3 minutos).
  */
-export const API_TIMEOUT: number = 30000;
+export const API_TIMEOUT: number = 180000;
 
 /**
  * Accepted File Types / Tipos de Archivo Aceptados
@@ -48,7 +48,7 @@ export const MAX_FILE_SIZE: number = 10 * 1024 * 1024;
  * EN: Maximum number of files per upload.
  * ES: Número máximo de archivos por upload.
  */
-export const MAX_FILES: number = 500;
+export const MAX_FILES: number = 10000;
 
 /**
  * Polling Interval / Intervalo de Sondeo
