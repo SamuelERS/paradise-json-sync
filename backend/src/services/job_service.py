@@ -6,6 +6,7 @@ Service for managing processing jobs.
 Servicio para gestión de trabajos de procesamiento.
 """
 
+import asyncio
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -32,6 +33,7 @@ class JobService:
         Inicializa el servicio de trabajos.
         """
         self._jobs: dict[str, dict] = {}
+        self._lock = asyncio.Lock()
         logger.debug("JobService initialized")
 
     async def create_job(
@@ -70,7 +72,9 @@ class JobService:
             "failed_at": None,
         }
 
-        self._jobs[job_id] = job
+        async with self._lock:
+            self._jobs[job_id] = job
+
         logger.info("Created job: %s for upload: %s", job_id, upload_id)
 
         return job
@@ -86,7 +90,8 @@ class JobService:
         Returns / Retorna:
             Job data dict or None / Dict de datos o None
         """
-        return self._jobs.get(job_id)
+        async with self._lock:
+            return self._jobs.get(job_id)
 
     async def update_progress(
         self,
@@ -106,18 +111,19 @@ class JobService:
         Returns / Retorna:
             True if updated / True si se actualizó
         """
-        if job_id not in self._jobs:
-            return False
+        async with self._lock:
+            if job_id not in self._jobs:
+                return False
 
-        job = self._jobs[job_id]
-        job["status"] = "processing"
-        job["progress"] = min(max(progress, 0), 100)
+            job = self._jobs[job_id]
+            job["status"] = "processing"
+            job["progress"] = min(max(progress, 0), 100)
 
-        if step:
-            job["current_step"] = step
+            if step:
+                job["current_step"] = step
 
-        if not job["started_at"]:
-            job["started_at"] = datetime.utcnow()
+            if not job["started_at"]:
+                job["started_at"] = datetime.utcnow()
 
         logger.debug(
             "Job %s progress: %d%% - %s",
@@ -146,26 +152,26 @@ class JobService:
         Returns / Retorna:
             True if completed / True si se completó
         """
-        if job_id not in self._jobs:
-            return False
-
-        job = self._jobs[job_id]
-
-        # Calculate total amount
+        # Calculate total amount outside lock
         total_amount = sum(
             float(inv.total) if isinstance(inv.total, Decimal) else inv.total for inv in invoices
         )
 
-        job["status"] = "completed"
-        job["progress"] = 100
-        job["current_step"] = None
-        job["completed_at"] = datetime.utcnow()
-        job["result"] = {
-            "total_invoices": len(invoices),
-            "total_amount": total_amount,
-            "output_file": Path(output_path).name,
-            "output_path": output_path,
-        }
+        async with self._lock:
+            if job_id not in self._jobs:
+                return False
+
+            job = self._jobs[job_id]
+            job["status"] = "completed"
+            job["progress"] = 100
+            job["current_step"] = None
+            job["completed_at"] = datetime.utcnow()
+            job["result"] = {
+                "total_invoices": len(invoices),
+                "total_amount": total_amount,
+                "output_file": Path(output_path).name,
+                "output_path": output_path,
+            }
 
         logger.info(
             "Job %s completed: %d invoices, total: %.2f",
@@ -188,13 +194,14 @@ class JobService:
         Returns / Retorna:
             True if marked as failed / True si se marcó como fallido
         """
-        if job_id not in self._jobs:
-            return False
+        async with self._lock:
+            if job_id not in self._jobs:
+                return False
 
-        job = self._jobs[job_id]
-        job["status"] = "failed"
-        job["error"] = error
-        job["failed_at"] = datetime.utcnow()
+            job = self._jobs[job_id]
+            job["status"] = "failed"
+            job["error"] = error
+            job["failed_at"] = datetime.utcnow()
 
         logger.error("Job %s failed: %s", job_id, error)
 
@@ -211,15 +218,17 @@ class JobService:
         Returns / Retorna:
             True if deleted / True si se eliminó
         """
-        if job_id not in self._jobs:
-            return False
+        async with self._lock:
+            if job_id not in self._jobs:
+                return False
 
-        del self._jobs[job_id]
+            del self._jobs[job_id]
+
         logger.info("Deleted job: %s", job_id)
 
         return True
 
-    def list_jobs(self, status: Optional[str] = None) -> list[dict]:
+    async def list_jobs(self, status: Optional[str] = None) -> list[dict]:
         """
         List all jobs, optionally filtered by status.
         Lista todos los trabajos, opcionalmente filtrados por estado.
@@ -230,7 +239,8 @@ class JobService:
         Returns / Retorna:
             List of job dicts / Lista de dicts de trabajos
         """
-        jobs = list(self._jobs.values())
+        async with self._lock:
+            jobs = list(self._jobs.values())
 
         if status:
             jobs = [j for j in jobs if j["status"] == status]

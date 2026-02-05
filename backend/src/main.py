@@ -14,9 +14,14 @@ Este API provee endpoints para:
 """
 
 import logging
+import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from src.api.exceptions import setup_exception_handlers
 from src.api.routes import download, health, process, status, upload
@@ -29,6 +34,10 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Configure rate limiter
+# Configurar limitador de tasa
+limiter = Limiter(key_func=get_remote_address)
+
 # Create FastAPI app
 app = FastAPI(
     title="Paradise JSON Sync API",
@@ -39,17 +48,23 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# Configure CORS
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Configure CORS from environment variable
+# CORS configurado desde variable de entorno
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",  # Alternative dev server
-        "https://paradise-json-sync.com",  # Production
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
 # Register routers

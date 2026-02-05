@@ -118,14 +118,17 @@ class PDFProcessor:
             merged_doc = fitz.open()
 
             for pdf_path in valid_paths:
+                doc = None
                 try:
                     doc = fitz.open(pdf_path)
                     merged_doc.insert_pdf(doc)
-                    doc.close()
                     logger.debug("Added %s to merged document", pdf_path)
                 except Exception as e:
                     logger.error("Error adding PDF %s: %s", pdf_path, e)
                     continue
+                finally:
+                    if doc is not None:
+                        doc.close()
 
             if merged_doc.page_count == 0:
                 merged_doc.close()
@@ -188,11 +191,11 @@ class PDFProcessor:
             return True
 
         # Try to open with PyMuPDF
+        doc = None
         try:
             doc = fitz.open(pdf_path)
             is_valid = doc.is_pdf
             page_count = doc.page_count
-            doc.close()
 
             if not is_valid:
                 logger.warning("File is not a valid PDF: %s", pdf_path)
@@ -208,6 +211,9 @@ class PDFProcessor:
         except Exception as e:
             logger.warning("Error validating PDF %s: %s", pdf_path, e)
             return False
+        finally:
+            if doc is not None:
+                doc.close()
 
     def get_page_count(self, pdf_path: str) -> int:
         """
@@ -235,10 +241,10 @@ class PDFProcessor:
                 file_path=pdf_path,
             )
 
+        doc = None
         try:
             doc = fitz.open(pdf_path)
             page_count = doc.page_count
-            doc.close()
 
             logger.debug("PDF %s has %d pages", pdf_path, page_count)
             return page_count
@@ -249,6 +255,9 @@ class PDFProcessor:
                 file_path=pdf_path,
                 original_error=e,
             ) from e
+        finally:
+            if doc is not None:
+                doc.close()
 
     def extract_text(self, pdf_path: str) -> str:
         """
@@ -274,14 +283,13 @@ class PDFProcessor:
                 file_path=pdf_path,
             )
 
+        doc = None
         try:
             doc = fitz.open(pdf_path)
             text_content = []
 
             for page in doc:
                 text_content.append(page.get_text())
-
-            doc.close()
 
             full_text = "\n".join(text_content)
             logger.debug(
@@ -298,6 +306,9 @@ class PDFProcessor:
                 file_path=pdf_path,
                 original_error=e,
             ) from e
+        finally:
+            if doc is not None:
+                doc.close()
 
     def split_pdf(
         self,
@@ -330,6 +341,7 @@ class PDFProcessor:
                 file_path=pdf_path,
             )
 
+        doc = None
         try:
             doc = fitz.open(pdf_path)
             output_path = Path(output_dir)
@@ -338,16 +350,18 @@ class PDFProcessor:
             output_files: list[str] = []
 
             for i, _page in enumerate(doc):
-                page_doc = fitz.open()
-                page_doc.insert_pdf(doc, from_page=i, to_page=i)
+                page_doc = None
+                try:
+                    page_doc = fitz.open()
+                    page_doc.insert_pdf(doc, from_page=i, to_page=i)
 
-                page_file = output_path / f"{prefix}_{i + 1:03d}.pdf"
-                page_doc.save(str(page_file))
-                page_doc.close()
+                    page_file = output_path / f"{prefix}_{i + 1:03d}.pdf"
+                    page_doc.save(str(page_file))
 
-                output_files.append(str(page_file))
-
-            doc.close()
+                    output_files.append(str(page_file))
+                finally:
+                    if page_doc is not None:
+                        page_doc.close()
 
             logger.info(
                 "Split %s into %d page files in %s",
@@ -366,3 +380,6 @@ class PDFProcessor:
                 file_path=pdf_path,
                 original_error=e,
             ) from e
+        finally:
+            if doc is not None:
+                doc.close()

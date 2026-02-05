@@ -12,7 +12,18 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
-from src.api.exceptions import JobNotCompletedError, JobNotFoundError
+from src.api.exceptions import APIException, JobNotCompletedError, JobNotFoundError
+
+
+class PathTraversalError(APIException):
+    """Path traversal attempt detected / Intento de path traversal detectado."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            error="PATH_TRAVERSAL_BLOCKED",
+            message="Invalid file path / Ruta de archivo inválida",
+            status_code=403,
+        )
 from src.api.schemas.responses import ErrorResponse
 from src.core.excel_exporter import ExcelExporter
 from src.core.json_processor import JSONProcessor
@@ -22,7 +33,28 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-OUTPUT_DIR = Path("outputs")
+OUTPUT_DIR = Path("outputs").resolve()
+
+
+def validate_output_path(path: Path) -> bool:
+    """
+    Validate that a path is within OUTPUT_DIR to prevent path traversal.
+    Valida que un path esté dentro de OUTPUT_DIR para prevenir path traversal.
+
+    Args / Argumentos:
+        path: Path to validate / Path a validar
+
+    Returns / Retorna:
+        True if path is safe / True si el path es seguro
+    """
+    try:
+        resolved_path = path.resolve()
+        # SECURITY: Only use is_relative_to, not startswith which can be bypassed
+        # SEGURIDAD: Solo usar is_relative_to, no startswith que puede ser evadido
+        return resolved_path.is_relative_to(OUTPUT_DIR)
+    except (ValueError, RuntimeError):
+        return False
+
 
 CONTENT_TYPES = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -68,17 +100,30 @@ async def download_result(job_id: str) -> FileResponse:
     if not job:
         raise JobNotFoundError(job_id)
 
-    if job["status"] != "completed":
-        raise JobNotCompletedError(job_id, job["status"])
+    if job.get("status") != "completed":
+        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
 
-    output_path = job["result"]["output_path"]
-    output_format = job["output_format"]
-    filename = job["result"]["output_file"]
+    # Safe access to nested dict values
+    result = job.get("result", {})
+    output_path_str = result.get("output_path")
+    if not output_path_str:
+        raise JobNotFoundError(f"Output path not found for job {job_id}")
+
+    output_path = Path(output_path_str)
+    output_format = job.get("output_format", "xlsx")
+    filename = result.get("output_file", f"result_{job_id}")
+
+    # Validate path is within allowed directory
+    if not validate_output_path(output_path):
+        # SECURITY: Don't log the actual path to prevent information disclosure
+        # SEGURIDAD: No loguear el path real para prevenir divulgación de información
+        logger.warning("Path traversal attempt blocked for job_id=%s", job_id)
+        raise PathTraversalError()
 
     logger.info("Download requested for job %s: %s", job_id, filename)
 
     return FileResponse(
-        path=output_path,
+        path=str(output_path),
         media_type=CONTENT_TYPES.get(output_format, "application/octet-stream"),
         filename=filename,
     )
@@ -120,14 +165,20 @@ async def download_excel(job_id: str) -> FileResponse:
     if not job:
         raise JobNotFoundError(job_id)
 
-    if job["status"] != "completed":
-        raise JobNotCompletedError(job_id, job["status"])
+    if job.get("status") != "completed":
+        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
 
-    original_path = Path(job["result"]["output_path"])
+    # Safe access to nested result dict
+    result = job.get("result", {})
+    output_path_str = result.get("output_path")
+    if not output_path_str:
+        raise JobNotFoundError(f"Output path not found for job {job_id}")
+
+    original_path = Path(output_path_str)
     filename = f"consolidado_{job_id}.xlsx"
 
     # Check if the original file is already an Excel
-    if job["output_format"] == "xlsx" and original_path.suffix.lower() == ".xlsx":
+    if job.get("output_format") == "xlsx" and original_path.suffix.lower() == ".xlsx":
         logger.info("Excel download requested for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
@@ -136,10 +187,11 @@ async def download_excel(job_id: str) -> FileResponse:
         )
 
     # Need to generate Excel from the original data
+    output_format = job.get("output_format", "xlsx")
     logger.info(
         "Excel download requested for job %s - generating from %s format",
         job_id,
-        job["output_format"],
+        output_format,
     )
 
     xlsx_path = OUTPUT_DIR / f"reporte_{job_id}.xlsx"
@@ -156,7 +208,9 @@ async def download_excel(job_id: str) -> FileResponse:
     # Generate Excel from original upload files
     from src.services.file_service import file_service
 
-    upload_id = job["upload_id"]
+    upload_id = job.get("upload_id")
+    if not upload_id:
+        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
     files = await file_service.get_files(upload_id)
 
     if not files:
@@ -236,14 +290,21 @@ async def download_pdf(job_id: str) -> FileResponse:
     if not job:
         raise JobNotFoundError(job_id)
 
-    if job["status"] != "completed":
-        raise JobNotCompletedError(job_id, job["status"])
+    if job.get("status") != "completed":
+        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
 
-    original_path = Path(job["result"]["output_path"])
+    # Safe access to nested result dict
+    result = job.get("result", {})
+    output_path_str = result.get("output_path")
+    if not output_path_str:
+        raise JobNotFoundError(f"Output path not found for job {job_id}")
+
+    original_path = Path(output_path_str)
     filename = f"consolidado_{job_id}.pdf"
+    output_format = job.get("output_format", "xlsx")
 
     # Check if the original file is already a PDF
-    if job["output_format"] == "pdf" and original_path.suffix.lower() == ".pdf":
+    if output_format == "pdf" and original_path.suffix.lower() == ".pdf":
         logger.info("PDF download requested for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
@@ -256,7 +317,7 @@ async def download_pdf(job_id: str) -> FileResponse:
     logger.info(
         "PDF download requested for job %s - generating from %s format",
         job_id,
-        job["output_format"],
+        output_format,
     )
 
     pdf_path = OUTPUT_DIR / f"reporte_{job_id}.pdf"
@@ -273,7 +334,9 @@ async def download_pdf(job_id: str) -> FileResponse:
     # Generate PDF from original upload files
     from src.services.file_service import file_service
 
-    upload_id = job["upload_id"]
+    upload_id = job.get("upload_id")
+    if not upload_id:
+        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
     files = await file_service.get_files(upload_id)
 
     if not files:
@@ -353,14 +416,21 @@ async def download_json(job_id: str) -> FileResponse:
     if not job:
         raise JobNotFoundError(job_id)
 
-    if job["status"] != "completed":
-        raise JobNotCompletedError(job_id, job["status"])
+    if job.get("status") != "completed":
+        raise JobNotCompletedError(job_id, job.get("status", "unknown"))
 
-    original_path = Path(job["result"]["output_path"])
+    # Safe access to nested result dict
+    result = job.get("result", {})
+    output_path_str = result.get("output_path")
+    if not output_path_str:
+        raise JobNotFoundError(f"Output path not found for job {job_id}")
+
+    original_path = Path(output_path_str)
     filename = f"consolidado_{job_id}.json"
+    output_format = job.get("output_format", "xlsx")
 
     # Check if the original file is already a JSON
-    if job["output_format"] == "json" and original_path.suffix.lower() == ".json":
+    if output_format == "json" and original_path.suffix.lower() == ".json":
         logger.info("JSON download requested for job %s (original format)", job_id)
         return FileResponse(
             path=str(original_path),
@@ -372,7 +442,7 @@ async def download_json(job_id: str) -> FileResponse:
     logger.info(
         "JSON download requested for job %s - generating from %s format",
         job_id,
-        job["output_format"],
+        output_format,
     )
 
     json_path = OUTPUT_DIR / f"reporte_{job_id}.json"
@@ -389,7 +459,9 @@ async def download_json(job_id: str) -> FileResponse:
     # Generate JSON from original upload files
     from src.services.file_service import file_service
 
-    upload_id = job["upload_id"]
+    upload_id = job.get("upload_id")
+    if not upload_id:
+        raise JobNotFoundError(f"Upload ID not found for job {job_id}")
     files = await file_service.get_files(upload_id)
 
     if not files:

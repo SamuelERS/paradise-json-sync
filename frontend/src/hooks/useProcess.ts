@@ -4,7 +4,7 @@
  * EN: Custom hook for managing file processing state and operations.
  * ES: Hook personalizado para manejar el estado y operaciones de procesamiento.
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   startProcess as startProcessService,
   ProcessOptions,
@@ -89,6 +89,24 @@ const initialState: ProcessState = {
 export function useProcess(): UseProcessReturn {
   const [state, setState] = useState<ProcessState>(initialState);
   const stopPollingRef = useRef<StopPolling | null>(null);
+  const isMountedRef = useRef(true);
+
+  /**
+   * Cleanup on unmount / Limpieza al desmontar
+   *
+   * EN: Stops polling and prevents state updates after unmount.
+   * ES: Detiene sondeo y previene actualizaciones de estado después de desmontar.
+   */
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (stopPollingRef.current) {
+        stopPollingRef.current();
+        stopPollingRef.current = null;
+      }
+    };
+  }, []);
 
   /**
    * Handle Status Update / Manejar Actualización de Estado
@@ -97,6 +115,7 @@ export function useProcess(): UseProcessReturn {
    * ES: Actualiza estado basado en respuesta de estado.
    */
   const handleStatusUpdate = useCallback((status: StatusResponse): void => {
+    if (!isMountedRef.current) return;
     setState((prev) => ({
       ...prev,
       status,
@@ -118,6 +137,7 @@ export function useProcess(): UseProcessReturn {
    *     para que la UI pueda recuperarse de errores.
    */
   const handlePollingError = useCallback((error: Error): void => {
+    if (!isMountedRef.current) return;
     setState((prev) => ({
       ...prev,
       isProcessing: false,
@@ -167,11 +187,13 @@ export function useProcess(): UseProcessReturn {
 
         return realJobId;
       } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          error: formatErrorMessage(error),
-        }));
+        if (isMountedRef.current) {
+          setState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            error: formatErrorMessage(error),
+          }));
+        }
         throw error;
       }
     },

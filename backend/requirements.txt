@@ -2,6 +2,7 @@
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
+slowapi==0.1.9
 
 # Procesamiento de datos
 pandas==2.2.0
@@ -11,7 +12,7 @@ xlsxwriter==3.1.9
 # Procesamiento de PDF
 PyMuPDF==1.23.8
 PyPDF2==3.0.1
-reportlab>=4.0.0
+reportlab==4.0.9
 
 # Validación y modelos
 pydantic==2.5.3

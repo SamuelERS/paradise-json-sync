@@ -29,6 +29,25 @@ from src.models.invoice import Invoice, InvoiceType
 logger = logging.getLogger(__name__)
 
 
+def payment_text(condition: Optional[int]) -> str:
+    """
+    Convert payment condition code to readable text.
+    Convierte código de condición de pago a texto legible.
+
+    Args / Argumentos:
+        condition: Payment condition code (1=CONTADO, 2=CRÉDITO)
+                   Código de condición de pago
+
+    Returns / Retorna:
+        Human readable payment text / Texto de pago legible
+    """
+    if condition == 1:
+        return "CONTADO"
+    elif condition == 2:
+        return "CRÉDITO"
+    return ""
+
+
 class ExcelExporterError(Exception):
     """
     Custom exception for Excel export errors.
@@ -275,14 +294,6 @@ class ExcelExporter:
             cell = sheet.cell(row=1, column=col, value=header)
             self._style_header_cell(cell)
 
-        # Map payment condition to readable text
-        def payment_text(condition: Optional[int]) -> str:
-            if condition == 1:
-                return "CONTADO"
-            elif condition == 2:
-                return "CRÉDITO"
-            return ""
-
         # Write invoice data with ALL fields
         for row_num, invoice in enumerate(invoices, start=2):
             col = 1
@@ -480,13 +491,6 @@ class ExcelExporter:
 
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        def payment_text(condition: Optional[int]) -> str:
-            if condition == 1:
-                return "CONTADO"
-            elif condition == 2:
-                return "CRÉDITO"
-            return ""
-
         with open(output_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
 
@@ -633,17 +637,27 @@ class ExcelExporter:
                 "source_file": inv.source_file or "",
             }
 
-        data = {
-            "invoices": [invoice_to_dict(inv) for inv in invoices],
-        }
+        # Always include base structure with metadata first for consistency
+        # Siempre incluir estructura base con metadata primero para consistencia
+        total_amount = sum(float(inv.total) for inv in invoices)
 
-        if include_metadata:
-            total_amount = sum(float(inv.total) for inv in invoices)
-            data["metadata"] = {
+        data: dict = {
+            "metadata": {
                 "exported_at": datetime.utcnow().isoformat(),
                 "total_invoices": len(invoices),
                 "total_amount": total_amount,
                 "currency": self.currency_symbol,
+                "format_version": "1.0",
+            },
+            "invoices": [invoice_to_dict(inv) for inv in invoices],
+        }
+
+        # Remove detailed metadata if not requested, but keep minimal structure
+        # Remover metadata detallada si no se solicita, pero mantener estructura mínima
+        if not include_metadata:
+            data["metadata"] = {
+                "total_invoices": len(invoices),
+                "format_version": "1.0",
             }
 
         with open(output_file, "w", encoding="utf-8") as f:
@@ -728,14 +742,6 @@ class ExcelExporter:
             fontSize=9,
             textColor=colors.grey,
         )
-
-        # Map payment condition to readable text
-        def payment_text(condition: Optional[int]) -> str:
-            if condition == 1:
-                return "CONTADO"
-            elif condition == 2:
-                return "CRÉDITO"
-            return "-"
 
         # ========== SUMMARY PAGE ==========
         elements.append(Paragraph(title, title_style))
@@ -834,7 +840,7 @@ class ExcelExporter:
                 ["DOCUMENTO", "", "", ""],
                 ["Código", (inv.document_number or "-")[:25], "Control", inv.control_number or "-"],
                 ["Fecha", f"{inv.issue_date.strftime('%Y-%m-%d')} {inv.emission_time or ''}", "Tipo", inv.invoice_type.value],
-                ["Pago", payment_text(inv.payment_condition), "Moneda", inv.currency or "USD"],
+                ["Pago", payment_text(inv.payment_condition) or "-", "Moneda", inv.currency or "USD"],
             ]
             doc_table = Table(doc_data, colWidths=[0.6 * inch, 1.5 * inch, 0.55 * inch, 1.0 * inch])
             doc_table.setStyle(TableStyle([

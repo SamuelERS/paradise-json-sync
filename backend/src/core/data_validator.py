@@ -149,7 +149,14 @@ class DataValidator:
             logger.debug("No invoices to validate date range")
             return True
 
-        dates = [inv.issue_date for inv in invoices]
+        # Filter out invoices with None or invalid dates
+        # Filtrar facturas con fechas None o inválidas
+        dates = [inv.issue_date for inv in invoices if inv.issue_date is not None]
+
+        if not dates:
+            logger.warning("No valid dates found in invoices")
+            return True  # No dates to validate
+
         min_date = min(dates)
         max_date = max(dates)
 
