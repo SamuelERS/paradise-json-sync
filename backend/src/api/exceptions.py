@@ -7,6 +7,7 @@ Excepciones personalizadas y manejadores para el API.
 """
 
 import logging
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -72,10 +73,12 @@ class JobNotCompletedError(APIException):
 class InvalidFileTypeError(APIException):
     """Invalid file type exception / Excepción de tipo de archivo inválido."""
 
-    def __init__(self, filename: str, allowed: list[str]) -> None:
+    def __init__(self, filename: str, allowed: List[str], detail: Optional[str] = None) -> None:
+        base_message = f"File {filename}: only {', '.join(allowed)} allowed / Solo se permiten {', '.join(allowed)}"
+        message = f"{base_message}. {detail}" if detail else base_message
         super().__init__(
             error="INVALID_FILE_TYPE",
-            message=f"File {filename}: only {', '.join(allowed)} allowed / Solo se permiten {', '.join(allowed)}",
+            message=message,
             status_code=400,
         )
 

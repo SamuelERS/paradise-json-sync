@@ -53,8 +53,8 @@ api.interceptors.request.use(
  */
 api.interceptors.response.use(
   (response) => {
-    // EN: Return data directly for convenience
-    // ES: Retornar datos directamente por conveniencia
+    // EN: Return full response (services access response.data)
+    // ES: Retornar respuesta completa (servicios acceden a response.data)
     return response;
   },
   (error: AxiosError<ApiErrorResponse>) => {
@@ -85,7 +85,7 @@ export default api;
  */
 export const formDataApi: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: API_TIMEOUT * 2, // EN: Double timeout for uploads / ES: Doble timeout para cargas
+  timeout: API_TIMEOUT * 6, // EN: Extended timeout for large uploads (3 min) / ES: Timeout extendido para cargas grandes (3 min)
   headers: {
     'Accept': 'application/json',
   },

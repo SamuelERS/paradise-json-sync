@@ -22,25 +22,29 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
 
       - name: Lint Backend
         run: |
           cd backend
-          pip install -r requirements.txt ruff mypy
-          ruff check app/ tests/ || true
-          mypy app/ --ignore-missing-imports || true
+          pip install -r requirements.txt ruff mypy types-aiofiles
+          ruff check src/ tests/
+          mypy src/ --disallow-untyped-defs --warn-return-any --warn-unused-ignores
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Lint Frontend
         run: |
           cd frontend
           npm ci
-          npm run lint || true
-          npm run type-check || true
+          npm run lint
+          npm run type-check
 
   test-backend:
     name: Tests Backend
@@ -53,6 +57,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
 
       - name: Install dependencies
         run: |
@@ -63,14 +69,14 @@ jobs:
       - name: Run tests
         run: |
           cd backend
-          pytest tests/ --cov=app --cov-report=xml --cov-fail-under=${{ env.COVERAGE_MINIMUM }} -v || pytest tests/ -v
+          pytest tests/ --cov=src --cov-report=xml --cov-fail-under=${{ env.COVERAGE_MINIMUM }} -v
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: ./backend/coverage.xml
           flags: backend
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   test-frontend:
     name: Tests Frontend
@@ -83,23 +89,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies
         run: |
           cd frontend
           npm ci
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           cd frontend
-          npm run test:coverage -- --reporter=verbose || npm test || echo "No tests configured yet"
+          npm run test:coverage -- --reporter=verbose
+          # Validate coverage file was generated
+          if [ ! -f "coverage/lcov.info" ]; then
+            echo "::error::Coverage file not generated"
+            exit 1
+          fi
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: ./frontend/coverage/lcov.info
           flags: frontend
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   test-e2e:
     name: Tests E2E (Playwright)
@@ -141,10 +154,28 @@ jobs:
       - name: Start services and run E2E tests
         run: |
           if [ -d "e2e" ]; then
-            cd backend && uvicorn app.main:app --port 8000 &
+            # Start backend with src.main
+            cd backend && uvicorn src.main:app --port 8000 &
+            BACKEND_PID=$!
+            cd ..
+
+            # Build and start frontend
             cd frontend && npm run build && npm run preview --port 5173 &
-            sleep 10
+            FRONTEND_PID=$!
+            cd ..
+
+            # Wait for services to be ready
+            echo "Waiting for services to start..."
+            sleep 15
+
+            # Run E2E tests
             cd e2e && npx playwright test
+            TEST_RESULT=$?
+
+            # Cleanup
+            kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+
+            exit $TEST_RESULT
           else
             echo "E2E tests skipped - directory not found"
           fi
@@ -165,7 +196,7 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
-          python -c "from app.main import app; print('Backend OK')"
+          python -c "from src.main import app; print('Backend OK')"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -201,8 +232,8 @@ jobs:
         run: |
           pip install safety bandit
           cd backend
-          safety check -r requirements.txt || echo "Safety check completed with warnings"
-          bandit -r app/ -ll || echo "Bandit check completed"
+          safety check -r requirements.txt --output text
+          bandit -r src/ -ll -f txt
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -212,4 +243,4 @@ jobs:
       - name: Frontend Security Scan
         run: |
           cd frontend
-          npm audit --audit-level=high || echo "NPM audit completed with warnings"
+          npm audit --audit-level=high

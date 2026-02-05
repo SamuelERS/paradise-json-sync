@@ -6,9 +6,11 @@ File processing endpoint.
 Endpoint de procesamiento de archivos.
 """
 
+import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Union
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks
@@ -57,7 +59,7 @@ async def process_job_task(
     try:
         files = await file_service.get_files(upload_id)
         invoices = []
-        validation_errors: list[dict[str, str | list[str]]] = []
+        validation_errors: List[Dict[str, Union[str, List[str]]]] = []
 
         json_processor = JSONProcessor()
         validator = DataValidator()
@@ -87,12 +89,23 @@ async def process_job_task(
                             file_info["name"],
                             errors,
                         )
-                except Exception as e:
+                except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                    # Errores esperados de procesamiento de archivos
                     validation_errors.append({
                         "file": file_info["name"],
                         "errors": [str(e)],
                     })
                     logger.warning("Error processing %s: %s", file_info["name"], e)
+                except (MemoryError, SystemExit, KeyboardInterrupt):
+                    # Errores críticos que deben propagarse
+                    raise
+                except Exception as e:
+                    # Errores inesperados - loguear con más detalle pero continuar
+                    logger.error("Unexpected error processing %s: %s", file_info["name"], e, exc_info=True)
+                    validation_errors.append({
+                        "file": file_info["name"],
+                        "errors": [f"Error inesperado: {str(e)}"],
+                    })
 
         if not invoices:
             # Build detailed error message

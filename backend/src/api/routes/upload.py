@@ -6,15 +6,21 @@ File upload endpoint for JSON and PDF files.
 Endpoint de subida de archivos JSON y PDF.
 """
 
+import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 from uuid import uuid4
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, Request, UploadFile
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from src.api.exceptions import FileTooLargeError, InvalidFileTypeError, TooManyFilesError
+
+# Rate limiter for upload endpoint
+limiter = Limiter(key_func=get_remote_address)
 from src.api.schemas.responses import ErrorResponse
 from src.api.schemas.upload import FileInfo, UploadData, UploadResponse
 from src.services.file_service import file_service
@@ -25,25 +31,27 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".json", ".pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-MAX_FILES = 50
+MAX_FILES = 500
 
 
 @router.post(
     "/upload",
     response_model=UploadResponse,
-    responses={400: {"model": ErrorResponse}},
+    responses={400: {"model": ErrorResponse}, 429: {"description": "Rate limit exceeded"}},
     summary="Upload Files",
     description="Sube archivos JSON o PDF para procesamiento / Upload JSON or PDF files for processing",
 )
+@limiter.limit("10/minute")  # Max 10 uploads per minute per IP
 async def upload_files(
-    files: list[UploadFile] = File(..., description="Archivos a subir / Files to upload"),
+    request: Request,  # Required for rate limiter
+    files: List[UploadFile] = File(..., description="Archivos a subir / Files to upload"),
 ) -> UploadResponse:
     """
     Upload JSON or PDF files for processing.
     Sube archivos JSON o PDF para procesamiento.
 
     Limits / Límites:
-    - Maximum 50 files per request / Máximo 50 archivos por petición
+    - Maximum 500 files per request / Máximo 500 archivos por petición
     - Maximum 10MB per file / Máximo 10MB por archivo
     - Only .json and .pdf allowed / Solo .json y .pdf permitidos
 
@@ -54,7 +62,7 @@ async def upload_files(
         UploadResponse with upload details / Detalles del upload
 
     Raises / Lanza:
-        TooManyFilesError: If more than 50 files / Si más de 50 archivos
+        TooManyFilesError: If more than 500 files / Si más de 500 archivos
         InvalidFileTypeError: If invalid extension / Si extensión inválida
         FileTooLargeError: If file > 10MB / Si archivo > 10MB
     """
@@ -63,7 +71,7 @@ async def upload_files(
         raise TooManyFilesError(count=len(files), max_files=MAX_FILES)
 
     # Validate and read each file
-    validated_files: list[dict[str, Any]] = []
+    validated_files: List[Dict[str, Any]] = []
     for file in files:
         # Validate extension
         ext = Path(file.filename or "").suffix.lower()
@@ -80,6 +88,30 @@ async def upload_files(
                 filename=file.filename or "unknown",
                 max_size_mb=MAX_FILE_SIZE // (1024 * 1024),
             )
+
+        # Validate file content (magic bytes)
+        filename = file.filename or "unknown"
+        if ext == ".pdf":
+            # PDF magic bytes: %PDF
+            if not content.startswith(b"%PDF"):
+                raise InvalidFileTypeError(
+                    filename=filename,
+                    allowed=list(ALLOWED_EXTENSIONS),
+                    detail="El archivo no tiene formato PDF válido / File is not a valid PDF",
+                )
+        elif ext == ".json":
+            # Validate JSON content
+            try:
+                json.loads(content.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                # SECURITY: Don't include user content or error details in response
+                # SEGURIDAD: No incluir contenido del usuario o detalles del error en respuesta
+                logger.warning("Invalid JSON file uploaded: %s - %s", filename, type(e).__name__)
+                raise InvalidFileTypeError(
+                    filename=filename,
+                    allowed=list(ALLOWED_EXTENSIONS),
+                    detail="El archivo no contiene JSON válido / File does not contain valid JSON",
+                )
 
         validated_files.append(
             {

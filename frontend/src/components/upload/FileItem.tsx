@@ -3,7 +3,9 @@
  *
  * Single file item in the upload list.
  * Elemento individual de archivo en la lista de carga.
+ * Memoized for performance with large file lists.
  */
+import { memo } from 'react';
 import type { FileInfo } from '../../types';
 
 interface FileItemProps {
@@ -33,18 +35,18 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileItem({ file, onRemove }: FileItemProps) {
+export const FileItem = memo(function FileItem({ file, onRemove }: FileItemProps) {
   const isJson = file.type === 'json';
 
   return (
     <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg">
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isJson ? 'bg-green-100' : 'bg-red-100'}`}>
         {isJson ? (
-          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Archivo JSON">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         ) : (
-          <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Archivo PDF">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         )}
@@ -59,14 +61,21 @@ export function FileItem({ file, onRemove }: FileItemProps) {
       {file.status !== 'uploading' && (
         <button
           onClick={onRemove}
-          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-          aria-label="Eliminar archivo"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onRemove();
+            }
+          }}
+          className="p-1 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded transition-colors"
+          aria-label={`Eliminar archivo ${file.name}`}
+          type="button"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       )}
     </div>
   );
-}
+});

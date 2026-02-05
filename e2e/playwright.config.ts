@@ -95,19 +95,18 @@ export default defineConfig({
 
   // Run local dev server before starting the tests
   // Ejecutar servidor de desarrollo antes de los tests
-  // Uncomment when frontend is ready / Descomentar cuando el frontend esté listo
-  // webServer: [
-  //   {
-  //     command: 'cd ../frontend && npm run dev',
-  //     url: 'http://localhost:5173',
-  //     reuseExistingServer: !process.env.CI,
-  //     timeout: 120 * 1000,
-  //   },
-  //   {
-  //     command: 'cd ../backend && uvicorn app.main:app --reload --port 8000',
-  //     url: 'http://localhost:8000/health',
-  //     reuseExistingServer: !process.env.CI,
-  //     timeout: 120 * 1000,
-  //   },
-  // ],
+  webServer: [
+    {
+      command: 'cd ../frontend && npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    {
+      command: 'cd ../backend && uvicorn src.main:app --reload --port 8000',
+      url: 'http://localhost:8000/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+  ],
 });

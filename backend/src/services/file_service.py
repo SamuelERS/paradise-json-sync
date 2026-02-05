@@ -6,17 +6,45 @@ Service for managing uploaded files.
 Servicio para gestión de archivos subidos.
 """
 
+import asyncio
 import logging
+import re
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import aiofiles
 
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path("uploads")
+
+
+def sanitize_filename(filename: str) -> str:
+    """
+    Sanitize a filename to prevent path traversal attacks.
+    Sanitiza un nombre de archivo para prevenir ataques de path traversal.
+
+    Args / Argumentos:
+        filename: Original filename / Nombre de archivo original
+
+    Returns / Retorna:
+        Safe filename with only the base name / Nombre seguro solo con el nombre base
+    """
+    # Extract only the base filename, removing any path components
+    # Extraer solo el nombre base, removiendo cualquier componente de path
+    safe_name = Path(filename).name
+
+    # Remove any remaining dangerous characters
+    # Remover cualquier caracter peligroso restante
+    safe_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', safe_name)
+
+    # Ensure the filename is not empty
+    if not safe_name or safe_name in ('.', '..'):
+        safe_name = 'unnamed_file'
+
+    return safe_name
 
 
 class FileService:
@@ -41,14 +69,17 @@ class FileService:
         """
         self.upload_dir = upload_dir or UPLOAD_DIR
         self.upload_dir.mkdir(parents=True, exist_ok=True)
-        self._uploads: dict[str, dict] = {}
+        self._uploads: Dict[str, dict] = {}
+        # Lock for thread-safe access to _uploads dict
+        # Lock para acceso thread-safe al dict _uploads
+        self._lock = asyncio.Lock()
         logger.debug("FileService initialized with upload_dir=%s", self.upload_dir)
 
     async def save_upload(
         self,
         upload_id: str,
-        files: list[dict],
-    ) -> list[dict]:
+        files: List[dict],
+    ) -> List[dict]:
         """
         Save uploaded files to disk.
         Guarda archivos subidos en disco.
@@ -65,28 +96,35 @@ class FileService:
 
         saved_files = []
         for file_data in files:
-            file_path = upload_path / file_data["name"]
+            # SECURITY: Sanitize filename to prevent path traversal
+            # SEGURIDAD: Sanitizar nombre de archivo para prevenir path traversal
+            safe_name = sanitize_filename(file_data["name"])
+            file_path = upload_path / safe_name
 
             async with aiofiles.open(file_path, "wb") as f:
                 await f.write(file_data["content"])
 
             saved_files.append(
                 {
-                    "name": file_data["name"],
+                    "name": safe_name,
+                    "original_name": file_data["name"],
                     "size": file_data["size"],
                     "type": file_data["type"],
                     "path": str(file_path),
                 }
             )
 
-            logger.debug("Saved file: %s (%d bytes)", file_data["name"], file_data["size"])
+            logger.debug("Saved file: %s (%d bytes)", safe_name, file_data["size"])
 
-        self._uploads[upload_id] = {
-            "files": saved_files,
-            "total_files": len(saved_files),
-            "created_at": datetime.utcnow(),
-            "expires_at": datetime.utcnow() + timedelta(hours=24),
-        }
+        # Thread-safe update of uploads registry
+        # Actualización thread-safe del registro de uploads
+        async with self._lock:
+            self._uploads[upload_id] = {
+                "files": saved_files,
+                "total_files": len(saved_files),
+                "created_at": datetime.utcnow(),
+                "expires_at": datetime.utcnow() + timedelta(hours=24),
+            }
 
         logger.info(
             "Upload %s saved with %d files",
@@ -107,9 +145,10 @@ class FileService:
         Returns / Retorna:
             Upload info dict or None / Dict de info o None
         """
-        return self._uploads.get(upload_id)
+        async with self._lock:
+            return self._uploads.get(upload_id)
 
-    async def get_files(self, upload_id: str) -> list[dict]:
+    async def get_files(self, upload_id: str) -> List[dict]:
         """
         Get list of files from an upload.
         Obtiene lista de archivos de un upload.
@@ -120,8 +159,9 @@ class FileService:
         Returns / Retorna:
             List of file info dicts / Lista de dicts de info de archivos
         """
-        upload = self._uploads.get(upload_id)
-        return upload["files"] if upload else []
+        async with self._lock:
+            upload = self._uploads.get(upload_id)
+            return upload.get("files", []) if upload else []
 
     async def delete_upload(self, upload_id: str) -> bool:
         """
@@ -134,16 +174,17 @@ class FileService:
         Returns / Retorna:
             True if deleted successfully / True si se eliminó correctamente
         """
-        if upload_id not in self._uploads:
-            return False
+        async with self._lock:
+            if upload_id not in self._uploads:
+                return False
 
-        upload_path = self.upload_dir / upload_id
-        if upload_path.exists():
-            shutil.rmtree(upload_path)
+            upload_path = self.upload_dir / upload_id
+            if upload_path.exists():
+                shutil.rmtree(upload_path)
 
-        del self._uploads[upload_id]
+            del self._uploads[upload_id]
+
         logger.info("Deleted upload: %s", upload_id)
-
         return True
 
     async def cleanup_expired(self) -> int:
@@ -155,17 +196,24 @@ class FileService:
             Number of uploads cleaned up / Número de uploads limpiados
         """
         now = datetime.utcnow()
-        expired = [
-            upload_id for upload_id, data in self._uploads.items() if data["expires_at"] < now
-        ]
 
+        # Get expired upload IDs under lock
+        async with self._lock:
+            expired = [
+                upload_id for upload_id, data in self._uploads.items()
+                if data.get("expires_at", now) < now
+            ]
+
+        # Delete each expired upload (delete_upload has its own lock)
+        deleted_count = 0
         for upload_id in expired:
-            await self.delete_upload(upload_id)
+            if await self.delete_upload(upload_id):
+                deleted_count += 1
 
-        if expired:
-            logger.info("Cleaned up %d expired uploads", len(expired))
+        if deleted_count:
+            logger.info("Cleaned up %d expired uploads", deleted_count)
 
-        return len(expired)
+        return deleted_count
 
 
 # Global instance / Instancia global

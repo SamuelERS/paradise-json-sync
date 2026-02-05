@@ -48,8 +48,8 @@ describe('API Client / Cliente API', () => {
   });
 
   describe('formDataApi Configuration / Configuración de formDataApi', () => {
-    it('should have double timeout for uploads / debe tener doble timeout para cargas', () => {
-      expect(formDataApi.defaults.timeout).toBe(API_TIMEOUT * 2);
+    it('should have extended timeout for large uploads / debe tener timeout extendido para cargas grandes', () => {
+      expect(formDataApi.defaults.timeout).toBe(API_TIMEOUT * 6);
     });
 
     it('should have same baseURL as api / debe tener misma baseURL que api', () => {

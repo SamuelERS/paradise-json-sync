@@ -30,11 +30,12 @@ jobs:
           cd backend
           safety check -r requirements.txt --output json > safety-report.json || true
           cat safety-report.json
+        continue-on-error: true
 
       - name: Bandit check (análisis estático de seguridad)
         run: |
           cd backend
-          bandit -r app/ -f json -o bandit-report.json -ll || true
+          bandit -r src/ -f json -o bandit-report.json -ll
           cat bandit-report.json
 
       - name: Pip-audit (auditoría de paquetes)
@@ -43,6 +44,7 @@ jobs:
           pip install -r requirements.txt
           pip-audit --format json > pip-audit-report.json || true
           cat pip-audit-report.json
+        continue-on-error: true
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4

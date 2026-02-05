@@ -63,8 +63,4 @@ export const useHandlers = (...additionalHandlers: Parameters<typeof server.use>
   server.use(...additionalHandlers);
 };
 
-/**
- * Export the server for direct access when needed
- * Exportar el servidor para acceso directo cuando sea necesario
- */
-export { server };
+// Note: server is already exported at declaration (line 18)

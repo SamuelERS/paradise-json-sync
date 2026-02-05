@@ -74,9 +74,9 @@ class TestUploadEndpoint:
         assert response.json()["error"] == "FILE_TOO_LARGE"
 
     def test_upload_too_many_files(self):
-        """Reject more than 50 files."""
+        """Reject more than 500 files."""
         files = [
-            ("files", (f"test{i}.json", BytesIO(b"{}"), "application/json")) for i in range(51)
+            ("files", (f"test{i}.json", BytesIO(b"{}"), "application/json")) for i in range(501)
         ]
 
         response = client.post("/api/upload", files=files)

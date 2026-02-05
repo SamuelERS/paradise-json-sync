@@ -37,10 +37,18 @@ export const ACCEPTED_FILE_TYPES: readonly string[] = ['.json', '.pdf'] as const
 /**
  * Maximum File Size / Tamaño Máximo de Archivo
  *
- * EN: Maximum file size in bytes (50MB).
- * ES: Tamaño máximo de archivo en bytes (50MB).
+ * EN: Maximum file size in bytes (10MB). Must match backend limit.
+ * ES: Tamaño máximo de archivo en bytes (10MB). Debe coincidir con el límite del backend.
  */
-export const MAX_FILE_SIZE: number = 50 * 1024 * 1024;
+export const MAX_FILE_SIZE: number = 10 * 1024 * 1024;
+
+/**
+ * Maximum Files / Máximo de Archivos
+ *
+ * EN: Maximum number of files per upload.
+ * ES: Número máximo de archivos por upload.
+ */
+export const MAX_FILES: number = 500;
 
 /**
  * Polling Interval / Intervalo de Sondeo

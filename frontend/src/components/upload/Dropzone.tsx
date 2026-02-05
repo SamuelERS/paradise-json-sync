@@ -4,6 +4,7 @@
  */
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { MAX_FILES } from '../../config/constants';
 
 interface DropzoneProps {
   /** Callback when files are selected / Callback cuando se seleccionan archivos */
@@ -19,7 +20,7 @@ interface DropzoneProps {
 const ICON_PATH = 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12';
 
 export function Dropzone({
-  onFilesSelected, acceptedTypes = ['.json', '.pdf'], maxFiles = 50, disabled = false,
+  onFilesSelected, acceptedTypes = ['.json', '.pdf'], maxFiles = MAX_FILES, disabled = false,
 }: DropzoneProps) {
   const [error, setError] = useState<string | null>(null);
 

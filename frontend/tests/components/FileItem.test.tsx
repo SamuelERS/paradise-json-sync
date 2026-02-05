@@ -59,18 +59,18 @@ describe('FileItem', () => {
 
   it('shows remove button when not uploading', () => {
     render(<FileItem file={createMockFile({ status: 'pending' })} onRemove={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Eliminar archivo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Eliminar archivo/i })).toBeInTheDocument();
   });
 
   it('hides remove button when uploading', () => {
     render(<FileItem file={createMockFile({ status: 'uploading' })} onRemove={vi.fn()} />);
-    expect(screen.queryByRole('button', { name: 'Eliminar archivo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Eliminar archivo/i })).not.toBeInTheDocument();
   });
 
   it('calls onRemove when remove button clicked', () => {
     const handleRemove = vi.fn();
     render(<FileItem file={createMockFile()} onRemove={handleRemove} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar archivo' }));
+    fireEvent.click(screen.getByRole('button', { name: /Eliminar archivo/i }));
     expect(handleRemove).toHaveBeenCalledTimes(1);
   });
 

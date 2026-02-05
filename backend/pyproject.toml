@@ -32,6 +32,8 @@ dependencies = [
     "pydantic-settings>=2.1.0",
     "python-dotenv>=1.0.0",
     "reportlab>=4.0.0",
+    "slowapi>=0.1.5",
+    "aiofiles>=23.2.1",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +54,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "app*"]
+include = ["src*"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -72,7 +74,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["src", "app"]
+source = ["src"]
 branch = true
 omit = [
     "*/tests/*",
