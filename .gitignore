@@ -35,6 +35,10 @@ htmlcov/
 .tox/
 .hypothesis/
 
+# Test coverage
+coverage/
+frontend/coverage/
+
 # Node.js / React
 node_modules/
 npm-debug.log*
