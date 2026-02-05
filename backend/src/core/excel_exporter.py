@@ -24,7 +24,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from src.models.invoice import Invoice, InvoiceType
+from src.models.invoice import Invoice, InvoiceType, get_branch_name
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ class ExcelExporter:
     # Column headers / Encabezados de columna
     HEADERS = [
         "N° Control",
+        "Sucursal / Branch",
         "N° Documento Interno",
         "Document Number / Código Gen.",
         "Type / Tipo",
@@ -228,13 +229,22 @@ class ExcelExporter:
         for inv in invoices:
             type_counts[inv.invoice_type] += 1
 
+        # Group by branch / Agrupar por sucursal
+        branch_totals: dict[str, dict[str, Decimal | int]] = {}
+        for inv in invoices:
+            branch = get_branch_name(inv.establishment_code) or "Sin Sucursal"
+            if branch not in branch_totals:
+                branch_totals[branch] = {"count": 0, "total": Decimal(0)}
+            branch_totals[branch]["count"] += 1  # type: ignore
+            branch_totals[branch]["total"] += inv.total  # type: ignore
+
         # Date range
         dates = [inv.issue_date for inv in invoices]
         min_date = min(dates) if dates else None
         max_date = max(dates) if dates else None
 
         # Write summary data
-        summary_data = [
+        summary_data: list[tuple[str, str | int]] = [
             ("Summary / Resumen", ""),
             ("", ""),
             ("Total Invoices / Total Facturas", total_count),
@@ -244,6 +254,19 @@ class ExcelExporter:
             ("  CCF", type_counts[InvoiceType.CCF]),
             ("  Nota Crédito", type_counts[InvoiceType.NOTA_CREDITO]),
             ("", ""),
+            ("By Branch / Por Sucursal:", ""),
+        ]
+        # Add branch totals dynamically
+        for branch_name, branch_data in sorted(branch_totals.items()):
+            count = branch_data["count"]
+            total = branch_data["total"]
+            summary_data.append((
+                f"  {branch_name}",
+                f"{count} facturas - {self.format_currency(total)}"  # type: ignore
+            ))
+
+        summary_data.extend([
+            ("", ""),
             ("Date Range / Rango de Fechas:", ""),
             ("  From / Desde", min_date.isoformat() if min_date else "N/A"),
             ("  To / Hasta", max_date.isoformat() if max_date else "N/A"),
@@ -252,7 +275,7 @@ class ExcelExporter:
             ("  Subtotal", self.format_currency(total_subtotal)),
             ("  Tax / Impuesto", self.format_currency(total_tax)),
             ("  Grand Total / Total General", self.format_currency(total_amount)),
-        ]
+        ])
 
         for row_num, (label, value) in enumerate(summary_data, start=1):
             sheet.cell(row=row_num, column=1, value=label)
@@ -298,6 +321,7 @@ class ExcelExporter:
         for row_num, invoice in enumerate(invoices, start=2):
             col = 1
             sheet.cell(row=row_num, column=col, value=invoice.control_number or ""); col += 1
+            sheet.cell(row=row_num, column=col, value=get_branch_name(invoice.establishment_code)); col += 1
             sheet.cell(row=row_num, column=col, value=invoice.internal_doc_number or ""); col += 1
             sheet.cell(row=row_num, column=col, value=invoice.document_number); col += 1
             sheet.cell(row=row_num, column=col, value=invoice.invoice_type.value); col += 1
@@ -327,8 +351,8 @@ class ExcelExporter:
             sheet.cell(row=row_num, column=col, value=invoice.tax_seal or ""); col += 1
             sheet.cell(row=row_num, column=col, value=invoice.source_file or "")
 
-            # Apply currency format to numeric cells (columns 19-25)
-            for currency_col in [19, 20, 21, 22, 23, 24, 25]:
+            # Apply currency format to numeric cells (columns 20-26, after adding Sucursal column)
+            for currency_col in [20, 21, 22, 23, 24, 25, 26]:
                 cell = sheet.cell(row=row_num, column=currency_col)
                 cell.number_format = f"{self.currency_symbol}#,##0.00"
 
@@ -500,6 +524,7 @@ class ExcelExporter:
             for invoice in invoices:
                 writer.writerow([
                     invoice.control_number or "",
+                    get_branch_name(invoice.establishment_code),
                     invoice.internal_doc_number or "",
                     invoice.document_number,
                     invoice.invoice_type.value,
@@ -575,6 +600,11 @@ class ExcelExporter:
                 "issue_date": inv.issue_date.isoformat(),
                 "emission_time": inv.emission_time or "",
                 "currency": inv.currency,
+
+                # Branch / Sucursal
+                "establishment_code": inv.establishment_code or "",
+                "branch_name": get_branch_name(inv.establishment_code),
+                "point_of_sale_code": inv.point_of_sale_code or "",
 
                 # Issuer / Emisor
                 "issuer": {
@@ -776,23 +806,67 @@ class ExcelExporter:
                 ("ALIGN", (1, 0), (1, -1), "RIGHT"),
             ]))
             elements.append(summary_table)
+            elements.append(Spacer(1, 20))
+
+            # Branch summary table / Tabla de resumen por sucursal
+            branch_totals: dict[str, dict[str, float | int]] = {}
+            for inv in invoices:
+                branch = get_branch_name(inv.establishment_code) or "Sin Sucursal"
+                if branch not in branch_totals:
+                    branch_totals[branch] = {"count": 0, "total": 0.0}
+                branch_totals[branch]["count"] += 1  # type: ignore
+                branch_totals[branch]["total"] += float(inv.total)  # type: ignore
+
+            branch_data = [["RESUMEN POR SUCURSAL", "", ""]]
+            branch_data.append(["Sucursal", "Facturas", "Total"])
+            for branch_name_item, branch_info in sorted(branch_totals.items()):
+                branch_data.append([
+                    branch_name_item,
+                    str(branch_info["count"]),
+                    f"{self.currency_symbol}{branch_info['total']:,.2f}"
+                ])
+            branch_data.append([
+                "TOTAL",
+                str(len(invoices)),
+                f"{self.currency_symbol}{total_amount:,.2f}"
+            ])
+
+            branch_table = Table(branch_data, colWidths=[2.5 * inch, 1.5 * inch, 2 * inch])
+            branch_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("SPAN", (0, 0), (-1, 0)),
+                ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#D6E3F8")),
+                ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 1), (-1, 1), 9),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FE")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#CCCCCC")),
+                ("FONTSIZE", (0, 2), (-1, -2), 10),
+                ("PADDING", (0, 0), (-1, -1), 8),
+                ("ALIGN", (1, 1), (1, -1), "CENTER"),
+                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+            ]))
+            elements.append(branch_table)
             elements.append(Spacer(1, 30))
 
             # Invoice list table (compact overview)
-            list_headers = ["#", "Fecha", "Cliente", "Tipo", "Total"]
+            list_headers = ["#", "Fecha", "Sucursal", "Cliente", "Tipo", "Total"]
             list_data = [list_headers]
             for i, inv in enumerate(invoices, 1):
                 list_data.append([
                     str(i),
                     inv.issue_date.strftime("%Y-%m-%d"),
-                    (inv.customer_name or "-")[:35],
+                    get_branch_name(inv.establishment_code) or "-",
+                    (inv.customer_name or "-")[:30],
                     inv.invoice_type.value,
                     f"{self.currency_symbol}{float(inv.total):,.2f}",
                 ])
 
             list_table = Table(
                 list_data,
-                colWidths=[0.4 * inch, 1 * inch, 3 * inch, 1 * inch, 1.2 * inch]
+                colWidths=[0.4 * inch, 0.9 * inch, 0.9 * inch, 2.2 * inch, 0.8 * inch, 1.2 * inch]
             )
             list_table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
@@ -835,12 +909,13 @@ class ExcelExporter:
             ))
 
             # ===== ROW 1: Document Info (left) + Amounts (right) =====
-            # Document info - compact 4 rows
+            # Document info - compact 5 rows
             doc_data = [
                 ["DOCUMENTO", "", "", ""],
                 ["Código", (inv.document_number or "-")[:25], "Control", inv.control_number or "-"],
                 ["Fecha", f"{inv.issue_date.strftime('%Y-%m-%d')} {inv.emission_time or ''}", "Tipo", inv.invoice_type.value],
                 ["Pago", payment_text(inv.payment_condition) or "-", "Moneda", inv.currency or "USD"],
+                ["Sucursal", get_branch_name(inv.establishment_code) or "-", "", ""],
             ]
             doc_table = Table(doc_data, colWidths=[0.6 * inch, 1.5 * inch, 0.55 * inch, 1.0 * inch])
             doc_table.setStyle(TableStyle([

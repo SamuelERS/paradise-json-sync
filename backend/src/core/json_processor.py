@@ -359,6 +359,10 @@ class JSONProcessor:
 
             # Tax seal / Sello fiscal
             "tax_seal": data.get("SelloRecibido") or data.get("selloRecibido", ""),
+
+            # Branch/Establishment data / Datos de sucursal
+            "establishment_code": emisor.get("codEstableMH", ""),
+            "point_of_sale_code": emisor.get("codPuntoVentaMH", ""),
         }
 
         # Normalize items from cuerpoDocumento with ALL fields
@@ -546,6 +550,10 @@ class JSONProcessor:
 
             # Tax seal / Sello fiscal
             tax_seal=data.get("tax_seal") or None,
+
+            # Branch/Establishment data / Datos de sucursal
+            establishment_code=data.get("establishment_code") or None,
+            point_of_sale_code=data.get("point_of_sale_code") or None,
         )
 
         return invoice

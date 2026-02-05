@@ -26,6 +26,31 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 logger = logging.getLogger(__name__)
 
 
+# Branch/Establishment code mapping / Mapeo de códigos de sucursal
+# Maps establishment codes (codEstableMH) to human-readable names
+BRANCH_CODE_MAP: dict[str, str] = {
+    "S001": "Los Héroes",
+    "S002": "Merliot",
+}
+
+
+def get_branch_name(code: Optional[str]) -> str:
+    """
+    Get branch name from establishment code.
+    Obtiene el nombre de la sucursal a partir del código de establecimiento.
+
+    Args / Argumentos:
+        code: Establishment code (e.g., "S001", "S002")
+              Código de establecimiento
+
+    Returns / Retorna:
+        Branch name or code if not found / Nombre de sucursal o código si no se encuentra
+    """
+    if not code:
+        return ""
+    return BRANCH_CODE_MAP.get(code, code)
+
+
 class InvoiceType(str, Enum):
     """
     Invoice type enumeration / Enumeración de tipos de factura.
@@ -346,6 +371,18 @@ class Invoice(BaseModel):
         default=None,
         max_length=100,
         description="Tax authority seal / Sello de Hacienda (SelloRecibido)",
+    )
+
+    # === Branch/Establishment data / Datos de sucursal ===
+    establishment_code: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="Establishment code / Código de establecimiento (codEstableMH)",
+    )
+    point_of_sale_code: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="Point of sale code / Código de punto de venta (codPuntoVentaMH)",
     )
 
     @field_validator("issue_date", mode="before")
