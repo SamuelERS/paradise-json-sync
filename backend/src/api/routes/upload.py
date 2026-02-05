@@ -14,13 +14,12 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Request, UploadFile
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from src.api.exceptions import FileTooLargeError, InvalidFileTypeError, TooManyFilesError
 
-# Rate limiter for upload endpoint
-limiter = Limiter(key_func=get_remote_address)
+# Import rate limiter (respects TESTING environment variable)
+# Importar rate limiter (respeta variable de entorno TESTING)
+from src.core.rate_limiter import limiter
 from src.api.schemas.responses import ErrorResponse
 from src.api.schemas.upload import FileInfo, UploadData, UploadResponse
 from src.services.file_service import file_service
@@ -31,7 +30,7 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".json", ".pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-MAX_FILES = 500
+MAX_FILES = 10000
 
 
 @router.post(
@@ -51,7 +50,7 @@ async def upload_files(
     Sube archivos JSON o PDF para procesamiento.
 
     Limits / Límites:
-    - Maximum 500 files per request / Máximo 500 archivos por petición
+    - Maximum 10000 files per request / Máximo 10000 archivos por petición
     - Maximum 10MB per file / Máximo 10MB por archivo
     - Only .json and .pdf allowed / Solo .json y .pdf permitidos
 
@@ -62,7 +61,7 @@ async def upload_files(
         UploadResponse with upload details / Detalles del upload
 
     Raises / Lanza:
-        TooManyFilesError: If more than 500 files / Si más de 500 archivos
+        TooManyFilesError: If more than 10000 files / Si más de 10000 archivos
         InvalidFileTypeError: If invalid extension / Si extensión inválida
         FileTooLargeError: If file > 10MB / Si archivo > 10MB
     """

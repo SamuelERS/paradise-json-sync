@@ -13,18 +13,23 @@ Este API provee endpoints para:
 - Monitoring job status / Monitorear estado de trabajos
 """
 
+# IMPORTANT: Import multipart config FIRST to apply the patch before FastAPI initialization
+# IMPORTANTE: Importar multipart config PRIMERO para aplicar el parche antes de inicializar FastAPI
+# This enables bulk uploads of up to 10000 files (default Starlette limit is 1000)
+# Esto habilita uploads masivos de hasta 10000 archivos (límite predeterminado de Starlette es 1000)
+import src.core.multipart_config  # noqa: F401 - Import for side effects
+
 import logging
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from src.api.exceptions import setup_exception_handlers
 from src.api.routes import download, health, process, status, upload
+from src.core.rate_limiter import TESTING, limiter
 
 # Configure logging
 logging.basicConfig(
@@ -34,9 +39,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Configure rate limiter
-# Configurar limitador de tasa
-limiter = Limiter(key_func=get_remote_address)
+if TESTING:
+    logger.info("Running in TESTING mode - Rate limiting DISABLED")
 
 # Create FastAPI app
 app = FastAPI(
@@ -54,10 +58,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS from environment variable
 # CORS configurado desde variable de entorno
-CORS_ORIGINS = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:5173,http://localhost:3000"
-).split(",")
+CORS_ORIGINS = [
+    origin.strip() for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:3000"
+    ).split(",")
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +80,8 @@ app.include_router(process.router, prefix="/api", tags=["Process"])
 app.include_router(status.router, prefix="/api", tags=["Status"])
 app.include_router(download.router, prefix="/api", tags=["Download"])
 
-# Setup exception handlers
+# Setup exception handlers (includes MultiPartException and HTTPException handlers)
+# Configurar manejadores de excepciones (incluye MultiPartException y HTTPException)
 setup_exception_handlers(app)
 
 logger.info("Paradise JSON Sync API started")
