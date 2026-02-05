@@ -1,35 +1,29 @@
 /**
  * Footer Component (Componente Pie de Página)
  *
- * Page footer with copyright and links.
- * Pie de página con copyright y enlaces.
+ * Paradise-SystemLabs distinctive footer with signature message.
+ * Pie de página distintivo de Paradise-SystemLabs con mensaje característico.
  */
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
-
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">
-            {currentYear} Paradise JSON Sync. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            <a
-              href="#help"
-              className="text-sm text-gray-500 hover:text-primary transition-colors"
-            >
-              Ayuda
-            </a>
-            <a
-              href="#docs"
-              className="text-sm text-gray-500 hover:text-primary transition-colors"
-            >
-              Documentación
-            </a>
-            <span className="text-sm text-gray-400">v0.1.0</span>
-          </div>
+    <footer className="bg-gray-900 border-t border-gray-700">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between text-sm">
+          {/* Izquierda - Logo/Nombre */}
+          <span className="text-gray-200 font-medium">
+            Paradise-SystemLabs
+          </span>
+
+          {/* Centro - Distintivo */}
+          <span className="text-gray-200 font-medium">
+            #JesucristoEsDios <span className="text-red-500" aria-hidden="true">♥️</span>
+          </span>
+
+          {/* Derecha - Versión */}
+          <span className="text-gray-400">
+            Version: v0.1.0
+          </span>
         </div>
       </div>
     </footer>

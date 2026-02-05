@@ -12,7 +12,7 @@ interface HeaderProps {
 
 export function Header({ title = 'Paradise JSON Sync' }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+    <header className="fixed top-0 left-0 right-0 bg-gray-900 z-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
@@ -22,6 +22,8 @@ export function Header({ title = 'Paradise JSON Sync' }: HeaderProps) {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-label="Paradise JSON Sync Logo"
+                role="img"
               >
                 <path
                   strokeLinecap="round"
@@ -31,13 +33,15 @@ export function Header({ title = 'Paradise JSON Sync' }: HeaderProps) {
                 />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+            <h1 className="text-xl font-bold text-white">{title}</h1>
           </div>
           <nav className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">v0.1.0</span>
+            <span className="text-sm text-gray-300">v0.1.0</span>
           </nav>
         </div>
       </div>
+      {/* Línea de acento con gradiente */}
+      <div className="h-0.5 bg-gradient-to-r from-primary via-purple-500 to-secondary" />
     </header>
   );
 }
