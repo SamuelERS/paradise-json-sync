@@ -45,7 +45,7 @@ export function ErrorList({ errors }: ErrorListProps) {
       <div className="space-y-2">
         {displayedErrors.map((error, index) => (
           <div
-            key={index}
+            key={`${error.fileName}-${error.code || 'error'}-${index}`}
             className="bg-red-50 border border-red-200 rounded-lg p-3"
           >
             <p className="text-sm font-medium text-red-800">{error.fileName}</p>

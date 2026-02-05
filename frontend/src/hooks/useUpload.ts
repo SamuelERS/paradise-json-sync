@@ -4,7 +4,7 @@
  * EN: Custom hook for managing file upload state and operations.
  * ES: Hook personalizado para manejar el estado y operaciones de carga de archivos.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { uploadFiles as uploadFilesService } from '../services/uploadService';
 import { FileInfo, createFileInfo, validateFile } from '../utils/fileUtils';
 import { formatErrorMessage } from '../utils/errorHandler';
@@ -80,6 +80,16 @@ const initialState: UploadState = {
  */
 export function useUpload(): UseUploadReturn {
   const [state, setState] = useState<UploadState>(initialState);
+
+  // Ref to store current files - avoids stale closure in upload callback
+  // Ref para almacenar archivos actuales - evita closure obsoleto en callback de upload
+  const filesRef = useRef<FileInfo[]>([]);
+
+  // Keep ref in sync with state
+  // Mantener ref sincronizado con el estado
+  useEffect(() => {
+    filesRef.current = state.files;
+  }, [state.files]);
 
   /**
    * Add Files / Agregar Archivos
@@ -157,9 +167,13 @@ export function useUpload(): UseUploadReturn {
    * ES: Carga todos los archivos válidos y retorna el ID del trabajo.
    */
   const upload = useCallback(async (): Promise<string> => {
+    // EN: Capture current files from ref to avoid stale closure
+    // ES: Capturar archivos actuales del ref para evitar closure obsoleto
+    const currentFiles = filesRef.current;
+
     // EN: Filter valid files only
     // ES: Filtrar solo archivos válidos
-    const validFiles = state.files.filter((f) => f.status !== 'error');
+    const validFiles = currentFiles.filter((f) => f.status !== 'error');
 
     if (validFiles.length === 0) {
       const errorMsg = 'No hay archivos válidos para cargar';
@@ -215,7 +229,7 @@ export function useUpload(): UseUploadReturn {
       }));
       throw error;
     }
-  }, [state.files]);
+  }, []);
 
   return {
     files: state.files,

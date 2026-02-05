@@ -4,7 +4,7 @@
  * Main page with file upload and processing workflow.
  * Página principal con carga de archivos y flujo de procesamiento.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { ProcessResults, AppStatus } from '../types';
 import { MainLayout } from '../components/layout';
 import { Card, Button, Alert } from '../components/common';
@@ -50,12 +50,12 @@ export function HomePage() {
     error: downloadError,
   } = useDownload();
 
-  // Combine progress from upload and process phases
-  const totalProgress = isUploading
-    ? uploadProgress * 0.3 // Upload is 30% of total
-    : isProcessing
-      ? 30 + processProgress * 0.7 // Process is 70% of total
-      : 0;
+  // Combine progress from upload and process phases (memoized)
+  const totalProgress = useMemo(() => {
+    if (isUploading) return uploadProgress * 0.3; // Upload is 30% of total
+    if (isProcessing) return 30 + processProgress * 0.7; // Process is 70% of total
+    return 0;
+  }, [isUploading, isProcessing, uploadProgress, processProgress]);
 
   // Update app status based on hook states
   useEffect(() => {
@@ -76,7 +76,7 @@ export function HomePage() {
           code: e.errorCode,
           line: e.line,
         })) || [],
-        outputUrl: processStatus.downloadUrl || `/api/download/excel/${jobId}`,
+        outputUrl: processStatus.downloadUrl || (jobId ? `/api/download/excel/${jobId}` : undefined),
       });
     } else if (processStatus?.status === 'failed') {
       setAppStatus('error');
@@ -139,8 +139,10 @@ export function HomePage() {
     }
     try {
       await downloadExcelFile(jobId, `consolidado_${jobId}.xlsx`);
-    } catch {
-      setError('Error al descargar el archivo Excel.');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('Error descargando Excel:', errorMsg);
+      setError(`Error al descargar el archivo Excel: ${errorMsg}`);
     }
   }, [jobId, downloadExcelFile]);
 
@@ -151,8 +153,10 @@ export function HomePage() {
     }
     try {
       await downloadPdfFile(jobId, `consolidado_${jobId}.pdf`);
-    } catch {
-      setError('Error al descargar el archivo PDF.');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('Error descargando PDF:', errorMsg);
+      setError(`Error al descargar el archivo PDF: ${errorMsg}`);
     }
   }, [jobId, downloadPdfFile]);
 
@@ -163,8 +167,10 @@ export function HomePage() {
     }
     try {
       await downloadJsonFile(jobId, `consolidado_${jobId}.json`);
-    } catch {
-      setError('Error al descargar el archivo JSON.');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('Error descargando JSON:', errorMsg);
+      setError(`Error al descargar el archivo JSON: ${errorMsg}`);
     }
   }, [jobId, downloadJsonFile]);
 
@@ -180,11 +186,11 @@ export function HomePage() {
 
   const isBusy = isUploading || isProcessing;
 
-  // Convert FileInfo from useUpload to the format expected by FileList
-  const filesForDisplay = files.map((f) => ({
+  // Convert FileInfo from useUpload to the format expected by FileList (memoized)
+  const filesForDisplay = useMemo(() => files.map((f) => ({
     ...f,
-    type: f.name.toLowerCase().endsWith('.json') ? 'json' as const : 'pdf' as const,
-  }));
+    type: (f.name?.toLowerCase().endsWith('.json')) ? 'json' as const : 'pdf' as const,
+  })), [files]);
 
   return (
     <MainLayout>

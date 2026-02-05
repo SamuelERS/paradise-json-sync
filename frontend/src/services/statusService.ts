@@ -121,6 +121,11 @@ export async function getStatus(jobId: string): Promise<StatusResponse> {
     `${API_ENDPOINTS.STATUS}/${jobId}`
   );
 
+  // Validar que la respuesta tiene la estructura esperada
+  if (!response.data?.data) {
+    throw new Error('Formato de respuesta de estado inválido');
+  }
+
   const backendData = response.data.data;
 
   // EN: Transform backend response to frontend format
@@ -147,6 +152,12 @@ export async function getStatus(jobId: string): Promise<StatusResponse> {
 const MAX_CONSECUTIVE_ERRORS = 5;
 
 /**
+ * Maximum polling time in milliseconds (1 hour)
+ * Tiempo máximo de sondeo en milisegundos (1 hora)
+ */
+const MAX_POLLING_TIME_MS = 60 * 60 * 1000;
+
+/**
  * Poll Status / Sondear Estado
  *
  * EN: Starts polling for job status at regular intervals.
@@ -171,9 +182,28 @@ export function pollStatus(
   let isPolling = true;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let consecutiveErrors = 0;
+  const startTime = Date.now();
+
+  const stopPolling = (): void => {
+    isPolling = false;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
 
   const poll = async (): Promise<void> => {
     if (!isPolling) return;
+
+    // EN: Check maximum polling time
+    // ES: Verificar tiempo máximo de sondeo
+    if (Date.now() - startTime > MAX_POLLING_TIME_MS) {
+      stopPolling();
+      if (onError) {
+        onError(new Error('Timeout: el procesamiento excedió el tiempo máximo de 1 hora'));
+      }
+      return;
+    }
 
     try {
       const status = await getStatus(jobId);
@@ -184,7 +214,7 @@ export function pollStatus(
       // EN: Stop polling if job is completed or failed
       // ES: Detener sondeo si el trabajo está completado o falló
       if (status.status === 'completed' || status.status === 'failed') {
-        isPolling = false;
+        stopPolling();
         return;
       }
 
@@ -199,7 +229,7 @@ export function pollStatus(
       // EN: Stop polling after too many consecutive errors
       // ES: Detener sondeo después de demasiados errores consecutivos
       if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        isPolling = false;
+        stopPolling();
         if (onError && error instanceof Error) {
           onError(
             new Error(
@@ -224,13 +254,7 @@ export function pollStatus(
 
   // EN: Return stop function
   // ES: Retornar función de detención
-  return (): void => {
-    isPolling = false;
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  };
+  return stopPolling;
 }
 
 /**
