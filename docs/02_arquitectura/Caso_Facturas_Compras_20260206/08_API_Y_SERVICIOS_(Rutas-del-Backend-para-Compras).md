@@ -324,6 +324,7 @@ class PurchaseProcessorService:
         self.registry = create_default_registry()
         self.validator = PurchaseValidator()
         self.exporter = PurchaseExporter()
+        self.pdf_extractor = PDFExtractor()  # FASE 7
 
     async def process(
         self,

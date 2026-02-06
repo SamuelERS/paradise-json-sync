@@ -50,18 +50,18 @@
 |---|-------|--------|-------------|-------|
 | 0.1 | Investigación de formatos DTE y variaciones | 🟢 | Claude | Completado en sesión inicial |
 | 0.2 | Investigación de herramientas (parsers, validadores) | 🟢 | Claude | AJV/Zod, pdf-parse, fast-xml-parser |
-| 0.3 | Documento: Visión y Alcance | 🟡 | Claude | `02_VISION_Y_ALCANCE` |
-| 0.4 | Documento: Arquitectura General | 🟡 | Claude | `03_ARQUITECTURA_GENERAL` |
-| 0.5 | Documento: Modelo Canónico | 🟡 | Claude | `04_MODELO_CANONICO` |
-| 0.6 | Documento: Detector de Formato | 🟡 | Claude | `05_DETECTOR_FORMATO` |
-| 0.7 | Documento: Mappers y Registro | 🟡 | Claude | `06_MAPPERS_Y_REGISTRO` |
-| 0.8 | Documento: Validador de Compras | 🟡 | Claude | `07_VALIDADOR_COMPRAS` |
-| 0.9 | Documento: API y Servicios | 🟡 | Claude | `08_API_Y_SERVICIOS` |
-| 0.10 | Documento: Exportador Configurable | 🟡 | Claude | `09_EXPORTADOR_COMPRAS` |
-| 0.11 | Documento: Soporte PDF | 🟡 | Claude | `10_SOPORTE_PDF` |
-| 0.12 | Documento: Frontend UI | 🟡 | Claude | `11_FRONTEND_UI` |
-| 0.13 | Documento: Testing y CI/CD | 🟡 | Claude | `12_TESTING_Y_CICD` |
-| 0.14 | Documento: Reglas No Negociables | 🟡 | Claude | `13_REGLAS_NO_NEGOCIABLES` |
+| 0.3 | Documento: Visión y Alcance | 🟢 | Claude | `02_VISION_Y_ALCANCE` |
+| 0.4 | Documento: Arquitectura General | 🟢 | Claude | `03_ARQUITECTURA_GENERAL` |
+| 0.5 | Documento: Modelo Canónico | 🟢 | Claude | `04_MODELO_CANONICO` |
+| 0.6 | Documento: Detector de Formato | 🟢 | Claude | `05_DETECTOR_FORMATO` |
+| 0.7 | Documento: Mappers y Registro | 🟢 | Claude | `06_MAPPERS_Y_REGISTRO` |
+| 0.8 | Documento: Validador de Compras | 🟢 | Claude | `07_VALIDADOR_COMPRAS` |
+| 0.9 | Documento: API y Servicios | 🟢 | Claude | `08_API_Y_SERVICIOS` |
+| 0.10 | Documento: Exportador Configurable | 🟢 | Claude | `09_EXPORTADOR_COMPRAS` |
+| 0.11 | Documento: Soporte PDF | 🟢 | Claude | `10_SOPORTE_PDF` |
+| 0.12 | Documento: Frontend UI | 🟢 | Claude | `11_FRONTEND_UI` |
+| 0.13 | Documento: Testing y CI/CD | 🟢 | Claude | `12_TESTING_Y_CICD` |
+| 0.14 | Documento: Reglas No Negociables | 🟢 | Claude | `13_REGLAS_NO_NEGOCIABLES` |
 
 ---
 
@@ -76,7 +76,7 @@
 | 1.2 | Crear modelo `PurchaseInvoiceItem` | 🔴 | — | Items con todos los campos DTE |
 | 1.3 | Crear enum `PurchaseDocumentType` | 🔴 | — | Todos los tipos DTE de compra |
 | 1.4 | Crear modelo `SupplierInfo` | 🔴 | — | Datos del proveedor (emisor) |
-| 1.5 | Crear modelo `RawDataContainer` | 🔴 | — | Almacena JSON original sin pérdida |
+| 1.5 | Agregar campo `raw_data: Optional[dict]` a PurchaseInvoice | 🔴 | — | Almacena JSON original sin pérdida |
 | 1.6 | Validadores del modelo (totales, IVA, fechas) | 🔴 | — | Misma tolerancia que Invoice actual |
 | 1.7 | Tests unitarios del modelo (>=70% cobertura) | 🔴 | — | `backend/tests/unit/test_purchase_invoice.py` |
 
@@ -176,7 +176,7 @@
 | 7.1 | Investigar PDFs de muestra (estructura típica) | 🔴 | — | Depende de muestras reales |
 | 7.2 | Implementar extractor texto de PDF (pdf-parse/PyMuPDF) | 🔴 | — | Para PDFs digitales |
 | 7.3 | Implementar parser de texto a datos estructurados | 🔴 | — | Regex + heurísticas |
-| 7.4 | Crear `PDFInvoiceMapper` | 🔴 | — | Registrar en MapperRegistry |
+| 7.4 | Crear `PDFExtractedMapper` | 🔴 | — | Registrar en MapperRegistry |
 | 7.5 | Tests unitarios (>=70%) | 🔴 | — | Con PDFs de prueba |
 
 ---
@@ -218,7 +218,7 @@
 
 | Fase | Descripción | Tareas | Completadas | Estado |
 |------|-------------|--------|-------------|--------|
-| 0 | Documentación Arquitectónica | 14 | 2 | 🟡 |
+| 0 | Documentación Arquitectónica | 14 | 14 | 🟢 |
 | 1 | Modelo de Datos | 7 | 0 | 🔴 |
 | 2 | Detector de Formato | 7 | 0 | 🔴 |
 | 3 | Mappers y Registro | 6 | 0 | 🔴 |
@@ -228,7 +228,7 @@
 | 7 | Soporte PDF | 5 | 0 | 🔴 |
 | 8 | Frontend UI | 7 | 0 | 🔴 |
 | 9 | Integración y Polish | 6 | 0 | 🔴 |
-| **TOTAL** | | **73** | **2** | **🟡** |
+| **TOTAL** | | **73** | **14** | **🟡** |
 
 ---
 
