@@ -1,5 +1,16 @@
 # Caso: Sistema de Procesamiento Inteligente de Facturas de Compra
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
+### Rol Requerido para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 📋 **Director de Proyecto** | Mantener actualizado el estado del caso, coordinar fases |
+| ✍️ **Documentador de Elite** | Verificar estructura, actualizar estados, prevenir duplicación |
+
+---
+
 | Campo | Valor |
 |-------|-------|
 | **Fecha inicio** | 2026-02-06 |

@@ -1,6 +1,35 @@
 # 📊 Exportador de Compras — Reportes Configurables sin Perder Datos
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica cómo el sistema genera reportes donde el usuario elige qué columnas ver, pero sin perder NINGÚN dato. La regla de oro: los datos siempre están completos, la vista es configurable.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar `PurchaseExporter` con columnas dinámicas |
+| 👨‍💻 **Desarrollador de Elite (Frontend)** | Implementar `ColumnConfigurator` en la UI |
+| ✅ **Inspector de Elite** | Verificar que NINGÚN dato se pierde al filtrar columnas |
+
+### Tareas de Implementación (FASE 6)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `PurchaseExporter` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/purchase_exporter.py` |
+| Definir columnas y perfiles | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Exportación Excel dinámica | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Exportación CSV dinámica | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Exportación PDF dinámica | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Exportación JSON completa | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Tests unitarios (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_purchase_exporter.py` |
+| Verificar cero pérdida datos | ✅ Inspector de Elite | Auditar JSON export vs input |
+
+### Nota sobre Rendimiento
+
+> Para lotes de más de 5,000 facturas, se recomienda exportar a CSV en lugar de Excel (menor uso de memoria).
+> Excel soporta hasta 1,048,576 filas, pero archivos grandes (>10MB) pueden ser lentos de abrir.
+> JSON siempre exporta todos los campos — sin límite de columnas configurables.
 
 ---
 

@@ -1,6 +1,27 @@
 # 📐 Modelo Canónico — PurchaseInvoice
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento define la estructura de datos universal para las facturas de compra. Es el "idioma común" al que todos los formatos se traducen. Es el corazón del sistema.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar el modelo `PurchaseInvoice` en Pydantic con validadores |
+| ✅ **Inspector de Elite** | Verificar que el modelo cubre todos los campos DTE sin pérdida |
+
+### Tareas de Implementación (FASE 1)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `PurchaseInvoice` | 👨‍💻 Desarrollador Backend | `backend/src/models/purchase_invoice.py` |
+| Crear `PurchaseInvoiceItem` | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Crear `SupplierInfo` | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Crear `PurchaseDocumentType` | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Validadores del modelo | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Tests unitarios (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_purchase_invoice.py` |
+| Revisión del modelo | ✅ Inspector de Elite | Verificar compatibilidad con exportador |
 
 ---
 

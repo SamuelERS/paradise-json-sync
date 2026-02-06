@@ -1,6 +1,16 @@
 # 🎯 Visión y Alcance — Sistema de Facturas de Compra
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica QUÉ vamos a construir, POR QUÉ lo necesitamos, y QUÉ NO vamos a tocar. Es el punto de partida para cualquier persona que se sume al proyecto.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 🧑‍🍳 **Chef Arquitecto** | Validar que la visión es técnicamente viable y alineada |
+| 📋 **Director de Proyecto** | Entender alcance antes de crear órdenes de trabajo |
+| 🧑‍🍳 **Todos los Agentes** | Lectura obligatoria — entender QUÉ se construye antes de CÓMO |
 
 ---
 

@@ -1,6 +1,27 @@
 # 🌐 API y Servicios — Rutas del Backend para Compras
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento define los endpoints HTTP, servicios y flujo de datos del backend para el procesamiento de facturas de compra.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar endpoints, schemas y servicio orquestador |
+| ✅ **Inspector de Elite** | Verificar seguridad de endpoints, validación de inputs |
+| ⚙️ **Ingeniero Operaciones** | Configurar rate limiting, monitoreo y logging |
+
+### Tareas de Implementación (FASE 5)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear router de compras | 👨‍💻 Desarrollador Backend | `backend/src/api/routes/purchases.py` |
+| Crear schemas Pydantic | 👨‍💻 Desarrollador Backend | `backend/src/api/schemas/purchases.py` |
+| Crear `PurchaseService` | 👨‍💻 Desarrollador Backend | `backend/src/services/purchase_service.py` |
+| Integrar con `main.py` | 👨‍💻 Desarrollador Backend | `backend/src/main.py` |
+| Tests de integración API (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/api/test_purchases_api.py` |
+| Revisión de seguridad | ✅ Inspector de Elite | Validar inputs, rate limits, error handling |
 
 ---
 
@@ -67,22 +88,6 @@ files: [archivo1.json, archivo2.json, factura.pdf, ...]
 ### 2.2 POST `/api/purchases/process`
 
 Inicia el procesamiento asíncrono del lote subido.
-
-**Request:**
-```json
-{
-  "upload_id": "uuid-del-upload",
-  "output_format": "xlsx",
-  "column_profile": "completo",
-  "custom_columns": null,
-  "options": {
-    "include_summary": true,
-    "include_items_sheet": true,
-    "group_by": "supplier",
-    "include_raw_data": false
-  }
-}
-```
 
 **Campos del request:**
 
@@ -462,6 +467,21 @@ tests/api/test_purchases_api.py
 ```
 
 **Cobertura esperada:** >= 70%
+
+---
+
+## 7. Respuestas de Error
+
+Estructura: `{ "success": false, "error": { "code": "...", "message": "...", "detail": "..." } }`
+
+| HTTP | Código | Cuándo |
+|------|--------|--------|
+| 400 | `INVALID_REQUEST` | Request malformado, tipo de archivo no soportado, `custom_columns` vacío con profile `custom` |
+| 404 | `NOT_FOUND` | `upload_id` o `job_id` no existe o ha expirado |
+| 413 | `FILE_TOO_LARGE` | Archivo > 10MB |
+| 429 | `RATE_LIMIT_EXCEEDED` | Más de 10 requests/minuto |
+
+**Validación `custom_columns`:** Si `column_profile="custom"` pero `custom_columns` es `null`/vacío → 400. Si contiene IDs no reconocidos → 400 con lista de columnas inválidas.
 
 ---
 

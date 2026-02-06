@@ -1,6 +1,28 @@
 # ✅ Validador de Compras — Verificación y Calidad de Datos
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica cómo el sistema verifica que los datos normalizados son correctos, completos y sin duplicados. Es el "inspector de calidad" del pipeline.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar `PurchaseValidator` con todas las reglas de validación |
+| ✅ **Inspector de Elite** | Verificar que las reglas de validación cubren todos los escenarios |
+| 🕵️ **Investigador de Elite** | Analizar inconsistencias reales en facturas de proveedores |
+
+### Tareas de Implementación (FASE 4)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `PurchaseValidator` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/validator.py` |
+| Crear `ValidationResult`, `ValidationIssue` | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Validación de totales y IVA | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Detección de duplicados | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Validación de fechas | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Tests unitarios (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_purchase_validator.py` |
+| Revisión de reglas de validación | ✅ Inspector de Elite | Verificar cobertura de escenarios |
 
 ---
 

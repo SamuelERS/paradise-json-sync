@@ -1,6 +1,38 @@
 # 🖥️ Frontend UI — Interfaz de Usuario para Compras
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento describe el diseño de la interfaz de usuario para el módulo de facturas de compra. El objetivo: que sea intuitivo, profesional y fácil de usar.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Frontend)** | Implementar componentes React, toggle, configurador de columnas |
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Proveer endpoints que el frontend consume |
+| ✅ **Inspector de Elite** | Verificar usabilidad, accesibilidad y manejo de errores |
+
+### Tareas de Implementación (FASE 8)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `ModeToggle` | 👨‍💻 Desarrollador Frontend | `frontend/src/components/ModeToggle.jsx` |
+| Crear `PurchaseUpload` | 👨‍💻 Desarrollador Frontend | `frontend/src/components/PurchaseUpload.jsx` |
+| Crear `ColumnConfigurator` | 👨‍💻 Desarrollador Frontend | `frontend/src/components/ColumnConfigurator.jsx` |
+| Crear `ProcessingProgress` | 👨‍💻 Desarrollador Frontend | `frontend/src/components/ProcessingProgress.jsx` |
+| Crear `PurchaseWorkflow` | 👨‍💻 Desarrollador Frontend | `frontend/src/components/PurchaseWorkflow.jsx` |
+| Modificar `Home.jsx` (toggle) | 👨‍💻 Desarrollador Frontend | `frontend/src/pages/Home.jsx` |
+| Tests de componentes (>=70%) | 👨‍💻 Desarrollador Frontend | `frontend/tests/components/` |
+| Tests E2E (Playwright) | 👨‍💻 Desarrollador Frontend | `e2e/tests/purchases-*.spec.ts` |
+| Revisión de UI/UX | ✅ Inspector de Elite | Verificar flujo, errores, responsividad |
+
+### Manejo de Errores en UI
+
+> Todo componente debe manejar estos estados de error:
+> - **Error de upload:** Archivo rechazado (tipo/tamaño) → mensaje claro, opción de reintentar
+> - **Error de procesamiento:** Job falla → mostrar archivos con error y razón
+> - **Error de red:** Timeout/desconexión → mensaje con botón de reintento
+> - **Error de descarga:** Archivo no disponible → mensaje con opción de reprocesar
 
 ---
 

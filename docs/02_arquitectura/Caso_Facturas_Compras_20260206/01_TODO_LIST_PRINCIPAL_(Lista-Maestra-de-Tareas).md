@@ -1,8 +1,33 @@
 # 📋 TODO LIST PRINCIPAL — Facturas de Compra
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **Este es el documento de control central del proyecto.**
 > Aquí se rastrea el progreso de cada fase, módulo y tarea.
 > Actualizar este archivo es **obligatorio** al completar cualquier tarea.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 📋 **Director de Proyecto** | Actualizar estados, coordinar fases, asignar tareas |
+| ✍️ **Documentador de Elite** | Mantener formato y coherencia con otros documentos |
+| 🧑‍🍳 **Todos los Agentes** | Consultar antes de empezar y actualizar al terminar cada tarea |
+
+### Asignación de Agentes por Fase
+
+| Fase | Agente(s) Requerido(s) | Justificación |
+|------|------------------------|---------------|
+| FASE 0 | ✍️ Documentador + 🕵️ Investigador | Documentación técnica + investigación de formatos |
+| FASE 1 | 👨‍💻 Desarrollador de Elite (Backend) | Modelos Pydantic, validadores, tests unitarios |
+| FASE 2 | 👨‍💻 Desarrollador de Elite (Backend) + 🕵️ Investigador | Análisis de formatos reales + implementación detector |
+| FASE 3 | 👨‍💻 Desarrollador de Elite (Backend) | Mappers con patrón Strategy, tests por mapper |
+| FASE 4 | 👨‍💻 Desarrollador de Elite (Backend) + ✅ Inspector | Validaciones matemáticas requieren revisión rigurosa |
+| FASE 5 | 👨‍💻 Desarrollador de Elite (Backend) | Endpoints FastAPI, schemas, servicio orquestador |
+| FASE 6 | 👨‍💻 Desarrollador de Elite (Backend) | Exportador con columnas dinámicas |
+| FASE 7 | 👨‍💻 Desarrollador de Elite (Backend) + 🕵️ Investigador | Regex sobre PDFs requiere análisis de muestras reales |
+| FASE 8 | 👨‍💻 Desarrollador de Elite (Frontend) | React, Tailwind, componentes, Vitest |
+| FASE 9 | ✅ Inspector de Elite + ⚙️ Ingeniero Operaciones | Inspección final, CI/CD, E2E, cobertura |
 
 ---
 

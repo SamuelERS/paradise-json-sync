@@ -1,6 +1,22 @@
 # 🏗️ Arquitectura General — Motor de Procesamiento de Compras
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento describe CÓMO funciona el sistema por dentro: el pipeline completo desde que entra un archivo hasta que sale un reporte. Es el mapa técnico para el desarrollador.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 🧑‍🍳 **Chef Arquitecto** | Validar diseño del pipeline, aprobar estructura de carpetas |
+| 👨‍💻 **Desarrollador de Elite** | Lectura obligatoria antes de implementar cualquier fase |
+| ✅ **Inspector de Elite** | Referencia para verificar que implementación sigue el diseño |
+
+### Nota sobre Nomenclatura de Clases
+
+> El orquestador del pipeline se llama `PurchaseProcessor` (en `backend/src/core/purchases/processor.py`).
+> El servicio de la API que lo invoca se llama `PurchaseService` (en `backend/src/services/purchase_service.py`).
+> Son dos clases distintas: el Service maneja el job asíncrono, el Processor ejecuta el pipeline.
 
 ---
 

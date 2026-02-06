@@ -1,8 +1,22 @@
 # 🚨 Reglas No Negociables — Normas Obligatorias para Cada Agente
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **⚠️ LECTURA OBLIGATORIA ANTES DE ESCRIBIR UNA SOLA LÍNEA DE CÓDIGO.**
 >
 > Este documento aplica a TODO agente (IA o humano) que trabaje en el módulo de facturas de compra. Sin excepciones.
+
+### Todos los Roles Deben Leer Este Documento
+
+| Rol | Por qué debe leerlo |
+|-----|---------------------|
+| 🧑‍🍳 **Chef Arquitecto** | Para verificar que el diseño cumple las restricciones |
+| 👨‍💻 **Desarrollador de Elite** | Para saber CÓMO escribir código, commits, y tests |
+| ✍️ **Documentador de Elite** | Para saber CÓMO nombrar archivos y mantener documentación |
+| 🕵️ **Investigador de Elite** | Para saber QUÉ buscar al analizar formatos y proveedores |
+| ✅ **Inspector de Elite** | Para tener el checklist de revisión de código |
+| ⚙️ **Ingeniero Operaciones** | Para saber las restricciones de CI/CD y despliegue |
+| 📋 **Director de Proyecto** | Para verificar que las órdenes de trabajo cumplen las normas |
 
 ---
 

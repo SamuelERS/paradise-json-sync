@@ -1,6 +1,31 @@
 # 🧪 Testing y CI/CD — Pruebas y Despliegue Continuo
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento define la estrategia de testing para el módulo de compras y cómo se integra con el pipeline CI/CD existente. Cobertura mínima: 70%.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| ✅ **Inspector de Elite** | Verificar cobertura de tests, detectar escenarios faltantes |
+| 👨‍💻 **Desarrollador de Elite** | Implementar tests unitarios, integración y E2E |
+| ⚙️ **Ingeniero Operaciones** | Configurar CI/CD pipeline, pre-commit hooks |
+
+### Tareas de Implementación (FASE 9 — parcial)
+
+| Tarea | Agente | Ubicación |
+|-------|--------|-----------|
+| Crear fixtures de prueba | 👨‍💻 Desarrollador Backend | `e2e/fixtures/test-data/purchases/` |
+| Verificar cobertura >=70% | ✅ Inspector de Elite | `pytest --cov` + `vitest --coverage` |
+| Extender GitHub Actions | ⚙️ Ingeniero Operaciones | `.github/workflows/test.yml` |
+| Tests de rendimiento 10k | ⚙️ Ingeniero Operaciones | `backend/tests/integration/test_purchase_pipeline.py` |
+| Revisión de seguridad en API | ✅ Inspector de Elite | Tests de inyección, XSS, límites |
+
+### Nota sobre Rendimiento
+
+> **Benchmark objetivo:** Procesar 10,000 facturas JSON en menos de 60 segundos.
+> Si el benchmark falla, revisar: detección (O(n) por formato), validación de duplicados (O(n²) — considerar hash set), y exportación Excel (memoria).
 
 ---
 

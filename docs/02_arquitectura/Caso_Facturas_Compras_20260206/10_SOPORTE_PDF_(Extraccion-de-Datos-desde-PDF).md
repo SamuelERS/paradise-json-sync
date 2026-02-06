@@ -1,6 +1,29 @@
 # 📄 Soporte PDF — Extracción de Datos desde PDF
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica cómo el sistema extrae datos de facturas que llegan en formato PDF en lugar de JSON. Cubre la estrategia por fases y las herramientas a usar.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar `PDFExtractor` y `PDFExtractedMapper` |
+| 🕵️ **Investigador de Elite** | Analizar PDFs reales de proveedores para calibrar regex |
+
+### Tareas de Implementación (FASE 7)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `PDFExtractor` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/pdf_extractor.py` |
+| Definir patrones regex | 🕵️ Investigador + 👨‍💻 Dev | Mismo archivo |
+| Crear `PDFExtractedMapper` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/mappers/pdf_extracted.py` |
+| Tests unitarios (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_pdf_extractor.py` |
+| Calibrar con PDFs reales | 🕵️ Investigador | Cuando haya muestras disponibles |
+
+### Nota sobre raw_data en PDFs
+
+> Para facturas extraídas de PDF, el campo `raw_data` del modelo `PurchaseInvoice` será `None` (no se almacena el binario del PDF). En su lugar, `source_file` apunta al PDF original y `processing_warnings` incluye la advertencia: "Datos extraídos de PDF — verificar manualmente".
 
 ---
 
@@ -245,6 +268,9 @@ class PDFExtractedMapper(BaseMapper):
 | Confianza menor | Los datos de PDF son menos confiables que JSON |
 | Formatos de PDF variados | Cada proveedor genera PDFs con layouts diferentes |
 | Caracteres especiales | Algunos PDFs tienen problemas con acentos/ñ |
+| PDFs multi-página | Se concatena texto de todas las páginas; no se maneja factura por página |
+| PDFs protegidos | No se soportan PDFs con contraseña; se reporta error claro |
+| raw_data | Para PDFs, `raw_data=None`; el archivo original se referencia en `source_file` |
 
 **Mitigación:** Toda factura extraída de PDF lleva un warning obligatorio: "Datos extraídos de PDF — verificar manualmente".
 

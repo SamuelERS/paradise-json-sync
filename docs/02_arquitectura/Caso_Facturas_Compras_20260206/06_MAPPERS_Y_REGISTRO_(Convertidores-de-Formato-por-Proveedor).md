@@ -1,6 +1,27 @@
 # 🔄 Mappers y Registro — Convertidores de Formato por Proveedor
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica cómo se convierte cada formato de JSON al modelo canónico `PurchaseInvoice`. Cada formato tiene su propio "traductor" (mapper) y un registro central los coordina.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar `BaseMapper`, `MapperRegistry`, y mappers concretos |
+| 🕵️ **Investigador de Elite** | Analizar formatos reales de proveedores para crear nuevos mappers |
+| ✅ **Inspector de Elite** | Verificar que raw_data se preserva y que no hay pérdida de datos |
+
+### Tareas de Implementación (FASE 3)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `BaseMapper` (abstracta) | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/base_mapper.py` |
+| Crear `MapperRegistry` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/mapper_registry.py` |
+| Crear `DTEStandardMapper` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/mappers/dte_standard.py` |
+| Crear `GenericFallbackMapper` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/mappers/generic_fallback.py` |
+| Tests unitarios por mapper (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_mappers.py` |
+| Agregar mappers según datos reales | 🕵️ Investigador + 👨‍💻 Dev | Nuevos archivos en `mappers/` |
 
 ---
 

@@ -1,6 +1,35 @@
 # 🔍 Detector de Formato — Sistema Inteligente de Identificación
 
+> **⚠️ ANTES DE EMPEZAR:** Lee [EL_PUNTO_DE_PARTIDA](../../EL_PUNTO_DE_PARTIDA_by_SamuelERS.md) para identificar tu rol y qué documentos te corresponden leer según tu misión.
+
 > **¿Qué es esto?** Este documento explica cómo el sistema identifica automáticamente el formato de cada JSON de factura de compra, sin configuración manual por proveedor.
+
+### Roles Requeridos para este Documento
+
+| Rol | Misión aquí |
+|-----|-------------|
+| 👨‍💻 **Desarrollador de Elite (Backend)** | Implementar `FormatDetector` con fingerprinting |
+| 🕵️ **Investigador de Elite** | Analizar JSONs de proveedores reales para definir fingerprints |
+
+### Tareas de Implementación (FASE 2)
+
+| Tarea | Agente | Archivo Destino |
+|-------|--------|-----------------|
+| Crear `FormatDetector` | 👨‍💻 Desarrollador Backend | `backend/src/core/purchases/format_detector.py` |
+| Crear `DetectedFormat` enum | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Crear `DetectionResult` model | 👨‍💻 Desarrollador Backend | Mismo archivo |
+| Definir fingerprints iniciales | 🕵️ Investigador + 👨‍💻 Dev | Mismo archivo |
+| Tests unitarios (>=70%) | 👨‍💻 Desarrollador Backend | `backend/tests/unit/test_format_detector.py` |
+| Calibrar con datos reales | 🕵️ Investigador | Cuando haya muestras disponibles |
+
+### Glosario del Detector
+
+| Término | Significado |
+|---------|-------------|
+| **Fingerprint** | Combinación de campos clave que identifica un formato específico |
+| **Score** | Puntaje de 0.0 a 1.0 que indica qué tan bien un JSON coincide con un fingerprint |
+| **Confidence** | Nivel de confianza: HIGH (>=0.90), MEDIUM (>=0.70), LOW (>=0.50), NONE (<0.50) |
+| **Fallback** | Cuando ningún formato conocido coincide, se usa el mapper genérico |
 
 ---
 
