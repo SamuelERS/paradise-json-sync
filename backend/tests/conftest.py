@@ -487,3 +487,121 @@ def sample_purchase_invoice(
         detection_confidence=0.95,
         raw_data={"identificacion": {}, "emisor": {}, "receptor": {}},
     )
+
+
+# === Format Detector Fixtures / Fixtures del Detector de Formato ===
+
+
+@pytest.fixture
+def sample_dte_standard_json() -> dict:
+    """
+    Sample DTE_STANDARD JSON (Hacienda official format).
+    JSON DTE_STANDARD de muestra (formato oficial Hacienda).
+    """
+    return {
+        "identificacion": {
+            "version": 3,
+            "ambiente": "01",
+            "tipoDte": "03",
+            "numeroControl": "DTE-03-00000001-000000000000001",
+            "codigoGeneracion": "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+            "tipoModelo": 1,
+            "tipoOperacion": 1,
+            "fecEmi": "2026-02-06",
+            "horEmi": "14:30:00",
+            "tipoMoneda": "USD",
+        },
+        "emisor": {
+            "nit": "0614-123456-789-0",
+            "nrc": "12345-6",
+            "nombre": "DISTRIBUIDORA ABC S.A. DE C.V.",
+        },
+        "receptor": {
+            "nit": "0614-999999-999-9",
+            "nombre": "MI EMPRESA S.A. DE C.V.",
+        },
+        "cuerpoDocumento": [
+            {"numItem": 1, "descripcion": "Papel Bond", "ventaGravada": 35.00}
+        ],
+        "resumen": {
+            "totalGravada": 35.00,
+            "totalIva": 4.55,
+            "totalPagar": 39.55,
+        },
+        "apendice": [{"campo": "valor"}],
+    }
+
+
+@pytest.fixture
+def sample_dte_variant_a_json() -> dict:
+    """
+    Sample DTE_VARIANT_A JSON (items in 'detalle' key).
+    JSON DTE_VARIANT_A de muestra (items en clave 'detalle').
+    """
+    return {
+        "identificacion": {
+            "codigoGeneracion": "B2C3D4E5-F6A7-8901-BCDE-F12345678901",
+            "tipoDte": "01",
+            "fecEmi": "2026-02-06",
+        },
+        "emisor": {"nombre": "PROVEEDOR XYZ"},
+        "receptor": {"nombre": "MI EMPRESA"},
+        "detalle": [
+            {"numItem": 1, "descripcion": "Producto A", "total": 100.00}
+        ],
+        "totales": {"totalAPagar": 113.00},
+    }
+
+
+@pytest.fixture
+def sample_dte_variant_b_json() -> dict:
+    """
+    Sample DTE_VARIANT_B JSON (flattened summary at root).
+    JSON DTE_VARIANT_B de muestra (resumen aplanado en raiz).
+    """
+    return {
+        "identificacion": {
+            "version": 3,
+            "tipoDte": "03",
+            "codigoGeneracion": "C3D4E5F6-A7B8-9012-CDEF-123456789012",
+            "fecEmi": "2026-02-06",
+        },
+        "emisor": {"nombre": "PROVEEDOR 123"},
+        "cuerpoDocumento": [
+            {"numItem": 1, "descripcion": "Servicio B", "total": 100.00}
+        ],
+        "totalGravada": 100.00,
+        "totalIva": 13.00,
+        "totalPagar": 113.00,
+    }
+
+
+@pytest.fixture
+def sample_generic_flat_json() -> dict:
+    """
+    Sample GENERIC_FLAT JSON (no DTE structure, common field names).
+    JSON GENERIC_FLAT de muestra (sin estructura DTE, nombres comunes).
+    """
+    return {
+        "numero_factura": "F-001",
+        "fecha": "2026-02-06",
+        "proveedor": "ABC S.A.",
+        "nit_proveedor": "0614-123456-789-0",
+        "items": [
+            {"descripcion": "Producto X", "cantidad": 2, "total": 20.00}
+        ],
+        "total": 113.00,
+    }
+
+
+@pytest.fixture
+def sample_unknown_json() -> dict:
+    """
+    Sample unrecognizable JSON (no matching fingerprint).
+    JSON irreconocible de muestra (sin fingerprint coincidente).
+    """
+    return {
+        "foo": "bar",
+        "baz": 123,
+        "nested": {"x": 1, "y": 2},
+    }
