@@ -60,84 +60,59 @@ class PurchaseProcessorService:
         config: object,
         progress_callback: ProgressCallback = None,
     ) -> ProcessingResult:
-        """
-        Execute full processing pipeline on files.
-        Ejecuta pipeline completo de procesamiento.
-
-        Args / Argumentos:
-            file_paths: List of file paths to process
-            config: PurchaseProcessRequest configuration
-            progress_callback: Optional (current, total, msg) callback
-
-        Returns / Retorna:
-            ProcessingResult with invoices and errors
-        """
+        """Execute full pipeline on files. / Ejecuta pipeline completo."""
         invoices: list[PurchaseInvoice] = []
         errors: list[dict] = []
 
         for i, path in enumerate(file_paths):
-            try:
-                if progress_callback:
-                    name = Path(path).name
-                    cb_result = progress_callback(
-                        i + 1, len(file_paths),
-                        f"Procesando {name}"
-                    )
-                    if asyncio.iscoroutine(cb_result):
-                        await cb_result
-
-                raw_data = self._load_json(path)
-                detected = self.detector.detect(raw_data)
-                mapper = self.registry.get_mapper(detected.format)
-                purchase = mapper.map(raw_data, source_file=path)
-                purchase.detected_format = detected.format.value
-                purchase.detection_confidence = detected.confidence
-
-                validation = self.validator.validate(
-                    purchase, existing=invoices
+            if progress_callback:
+                cb_result = progress_callback(
+                    i + 1, len(file_paths), f"Procesando {Path(path).name}"
                 )
-                purchase.processing_warnings = [
-                    str(issue) for issue in validation.issues
-                ]
-
-                if validation.is_valid:
-                    invoices.append(purchase)
-                else:
-                    error_msgs = [
-                        str(e) for e in validation.issues
-                        if e.level == ValidationLevel.ERROR
-                    ]
-                    errors.append({
-                        "file": path,
-                        "reason": "; ".join(error_msgs),
-                    })
-
-            except MappingError as e:
-                logger.warning("Mapping error for %s: %s", path, e)
-                errors.append({"file": path, "reason": str(e)})
-            except JSONDecodeError as e:
-                logger.warning("JSON error for %s: %s", path, e)
-                errors.append({
-                    "file": path,
-                    "reason": f"JSON invalido: {e}",
-                })
-            except Exception as e:
-                logger.error(
-                    "Unexpected error processing %s: %s", path, e
-                )
-                errors.append({"file": path, "reason": str(e)})
-
-        formats_summary = self._count_formats(invoices)
+                if asyncio.iscoroutine(cb_result):
+                    await cb_result
+            result = self._process_single(path, invoices)
+            if isinstance(result, PurchaseInvoice):
+                invoices.append(result)
+            else:
+                errors.append(result)
 
         return ProcessingResult(
-            invoices=[
-                inv.model_dump(mode="json") for inv in invoices
-            ],
+            invoices=[inv.model_dump(mode="json") for inv in invoices],
             invoice_count=len(invoices),
             error_count=len(errors),
             errors=errors,
-            formats_summary=formats_summary,
+            formats_summary=self._count_formats(invoices),
         )
+
+    def _process_single(
+        self, path: str, existing: list[PurchaseInvoice]
+    ) -> PurchaseInvoice | dict:
+        """Process a single file. Returns invoice or error dict."""
+        try:
+            raw_data = self._load_json(path)
+            detected = self.detector.detect(raw_data)
+            mapper = self.registry.get_mapper(detected.format)
+            purchase = mapper.map(raw_data, source_file=path)
+            purchase.detected_format = detected.format.value
+            purchase.detection_confidence = detected.confidence
+            validation = self.validator.validate(purchase, existing=existing)
+            purchase.processing_warnings = [str(i) for i in validation.issues]
+            if validation.is_valid:
+                return purchase
+            error_msgs = [
+                str(e) for e in validation.issues if e.level == ValidationLevel.ERROR
+            ]
+            return {"file": path, "reason": "; ".join(error_msgs)}
+        except MappingError as e:
+            logger.warning("Mapping error for %s: %s", path, e)
+            return {"file": path, "reason": str(e)}
+        except JSONDecodeError as e:
+            logger.warning("JSON error for %s: %s", path, e)
+            return {"file": path, "reason": f"JSON invalido: {e}"}
+        except Exception as e:
+            logger.error("Unexpected error processing %s: %s", path, e)
+            return {"file": path, "reason": str(e)}
 
     def _load_json(self, path: str) -> dict:
         """

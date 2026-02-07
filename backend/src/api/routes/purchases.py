@@ -61,174 +61,74 @@ ALLOWED_EXTENSIONS = {".json", ".pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 MAX_FILES = 10000
 
-# Column profiles / Perfiles de columnas
+_BASICO_COLS = ["control_number", "document_type", "issue_date", "supplier_name", "total"]
+_COMPLETO_COLS = [
+    "control_number", "document_number", "document_type", "issue_date",
+    "supplier_name", "supplier_nit", "supplier_nrc", "subtotal",
+    "total_taxable", "total_exempt", "total_non_subject", "tax", "total",
+]
+_CONTADOR_COLS = [
+    "control_number", "document_type", "issue_date", "supplier_name",
+    "supplier_nit", "total_taxable", "total_exempt", "tax", "total",
+]
 COLUMN_PROFILES = {
-    "basico": {
-        "name": "Basico",
-        "description": "Solo campos esenciales",
-        "columns": [
-            "control_number",
-            "document_type",
-            "issue_date",
-            "supplier_name",
-            "total",
-        ],
-    },
-    "completo": {
-        "name": "Completo",
-        "description": "Todos los campos disponibles",
-        "columns": [
-            "control_number",
-            "document_number",
-            "document_type",
-            "issue_date",
-            "supplier_name",
-            "supplier_nit",
-            "supplier_nrc",
-            "subtotal",
-            "total_taxable",
-            "total_exempt",
-            "total_non_subject",
-            "tax",
-            "total",
-        ],
-    },
-    "contador": {
-        "name": "Contador",
-        "description": "Campos fiscales para contabilidad",
-        "columns": [
-            "control_number",
-            "document_type",
-            "issue_date",
-            "supplier_name",
-            "supplier_nit",
-            "total_taxable",
-            "total_exempt",
-            "tax",
-            "total",
-        ],
-    },
+    "basico": {"name": "Basico", "description": "Solo campos esenciales", "columns": _BASICO_COLS},
+    "completo": {"name": "Completo", "description": "Todos los campos disponibles", "columns": _COMPLETO_COLS},
+    "contador": {"name": "Contador", "description": "Campos fiscales para contabilidad", "columns": _CONTADOR_COLS},
 }
 
-ALL_COLUMNS = [
-    PurchaseColumnInfo(
-        id="control_number", label="N Control", category="identificacion"
-    ),
-    PurchaseColumnInfo(
-        id="document_number", label="Cod Generacion", category="identificacion"
-    ),
-    PurchaseColumnInfo(
-        id="document_type", label="Tipo Doc", category="identificacion"
-    ),
-    PurchaseColumnInfo(
-        id="issue_date", label="Fecha", category="identificacion"
-    ),
-    PurchaseColumnInfo(
-        id="supplier_name", label="Proveedor", category="proveedor"
-    ),
-    PurchaseColumnInfo(
-        id="supplier_nit", label="NIT Proveedor", category="proveedor"
-    ),
-    PurchaseColumnInfo(
-        id="supplier_nrc", label="NRC Proveedor", category="proveedor"
-    ),
-    PurchaseColumnInfo(
-        id="subtotal", label="Subtotal", category="montos"
-    ),
-    PurchaseColumnInfo(
-        id="total_taxable", label="Gravado", category="montos"
-    ),
-    PurchaseColumnInfo(
-        id="total_exempt", label="Exento", category="montos"
-    ),
-    PurchaseColumnInfo(
-        id="total_non_subject", label="No Sujeto", category="montos"
-    ),
-    PurchaseColumnInfo(
-        id="tax", label="IVA", category="montos"
-    ),
-    PurchaseColumnInfo(
-        id="total", label="Total", category="montos"
-    ),
+_COL_DEFS = [
+    ("control_number", "N Control", "identificacion"),
+    ("document_number", "Cod Generacion", "identificacion"),
+    ("document_type", "Tipo Doc", "identificacion"),
+    ("issue_date", "Fecha", "identificacion"),
+    ("supplier_name", "Proveedor", "proveedor"),
+    ("supplier_nit", "NIT Proveedor", "proveedor"),
+    ("supplier_nrc", "NRC Proveedor", "proveedor"),
+    ("subtotal", "Subtotal", "montos"),
+    ("total_taxable", "Gravado", "montos"),
+    ("total_exempt", "Exento", "montos"),
+    ("total_non_subject", "No Sujeto", "montos"),
+    ("tax", "IVA", "montos"),
+    ("total", "Total", "montos"),
 ]
-
+ALL_COLUMNS = [PurchaseColumnInfo(id=c[0], label=c[1], category=c[2]) for c in _COL_DEFS]
 VALID_COLUMN_IDS = {c.id for c in ALL_COLUMNS}
 
-# Format info / Informacion de formatos
-SUPPORTED_FORMATS = [
-    PurchaseFormatInfo(
-        id="DTE_STANDARD",
-        name="DTE Estandar (Hacienda)",
-        description="Formato oficial del Ministerio de Hacienda",
-    ),
-    PurchaseFormatInfo(
-        id="DTE_VARIANT_A",
-        name="DTE Variante A",
-        description="Items en 'detalle' en vez de 'cuerpoDocumento'",
-    ),
-    PurchaseFormatInfo(
-        id="DTE_VARIANT_B",
-        name="DTE Variante B",
-        description="Estructura con campos renombrados",
-    ),
-    PurchaseFormatInfo(
-        id="GENERIC_FLAT",
-        name="JSON Plano Generico",
-        description="Formato plano sin estructura DTE",
-    ),
-    PurchaseFormatInfo(
-        id="PDF_EXTRACTED",
-        name="PDF (texto extraido)",
-        description="Datos extraidos de factura en PDF",
-    ),
+_FMT_DEFS = [
+    ("DTE_STANDARD", "DTE Estandar (Hacienda)", "Formato oficial del Ministerio de Hacienda"),
+    ("DTE_VARIANT_A", "DTE Variante A", "Items en 'detalle' en vez de 'cuerpoDocumento'"),
+    ("DTE_VARIANT_B", "DTE Variante B", "Estructura con campos renombrados"),
+    ("GENERIC_FLAT", "JSON Plano Generico", "Formato plano sin estructura DTE"),
+    ("PDF_EXTRACTED", "PDF (texto extraido)", "Datos extraidos de factura en PDF"),
 ]
+SUPPORTED_FORMATS = [PurchaseFormatInfo(id=f[0], name=f[1], description=f[2]) for f in _FMT_DEFS]
 
 
-@router.post(
-    "/upload",
-    response_model=PurchaseUploadResponse,
-    responses={
-        400: {"model": ErrorResponse},
-        429: {"description": "Rate limit exceeded"},
-    },
-    summary="Upload Purchase Files",
-    description=(
-        "Sube archivos JSON o PDF de compras / "
-        "Upload purchase JSON or PDF files"
-    ),
-)
-@limiter.limit("10/minute")
-async def upload_purchase_files(
-    request: Request,
-    files: List[UploadFile] = File(
-        ..., description="Archivos de compras / Purchase files"
-    ),
-) -> PurchaseUploadResponse:
-    """
-    Upload purchase invoice files (JSON/PDF).
-    Sube archivos de facturas de compra (JSON/PDF).
-
-    Args / Argumentos:
-        request: HTTP request (required for rate limiter)
-        files: List of files to upload
-
-    Returns / Retorna:
-        PurchaseUploadResponse with upload details
-
-    Raises / Lanza:
-        TooManyFilesError: If more than 10000 files
-        InvalidFileTypeError: If invalid extension
-        FileTooLargeError: If file > 10MB
-    """
-    if len(files) > MAX_FILES:
-        raise TooManyFilesError(
-            count=len(files), max_files=MAX_FILES
+def _validate_file_content(filename: str, ext: str, content: bytes) -> None:
+    """Validate file content matches its extension. / Valida contenido del archivo."""
+    if ext == ".pdf" and not content.startswith(b"%PDF"):
+        raise InvalidFileTypeError(
+            filename=filename, allowed=list(ALLOWED_EXTENSIONS),
+            detail="No es un PDF valido / Not a valid PDF",
         )
+    elif ext == ".json":
+        try:
+            json.loads(content.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise InvalidFileTypeError(
+                filename=filename, allowed=list(ALLOWED_EXTENSIONS),
+                detail="JSON invalido / Invalid JSON",
+            )
 
-    validated_files: list[dict] = []
+
+async def _validate_and_read_files(
+    files: List[UploadFile],
+) -> tuple[list[dict], int, int]:
+    """Validate and read uploaded files. / Valida y lee archivos subidos."""
+    validated: list[dict] = []
     json_count = 0
     pdf_count = 0
-
     for file in files:
         ext = Path(file.filename or "").suffix.lower()
         if ext not in ALLOWED_EXTENSIONS:
@@ -236,7 +136,6 @@ async def upload_purchase_files(
                 filename=file.filename or "unknown",
                 allowed=list(ALLOWED_EXTENSIONS),
             )
-
         content = await file.read()
         await file.close()
         if len(content) > MAX_FILE_SIZE:
@@ -244,140 +143,101 @@ async def upload_purchase_files(
                 filename=file.filename or "unknown",
                 max_size_mb=MAX_FILE_SIZE // (1024 * 1024),
             )
-
+        _validate_file_content(file.filename or "unknown", ext, content)
         if ext == ".pdf":
-            if not content.startswith(b"%PDF"):
-                raise InvalidFileTypeError(
-                    filename=file.filename or "unknown",
-                    allowed=list(ALLOWED_EXTENSIONS),
-                    detail="No es un PDF valido / Not a valid PDF",
-                )
             pdf_count += 1
         elif ext == ".json":
-            try:
-                json.loads(content.decode("utf-8"))
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                raise InvalidFileTypeError(
-                    filename=file.filename or "unknown",
-                    allowed=list(ALLOWED_EXTENSIONS),
-                    detail="JSON invalido / Invalid JSON",
-                )
             json_count += 1
-
-        validated_files.append({
+        validated.append({
             "content": content,
-            "name": file.filename or f"file_{len(validated_files)}",
+            "name": file.filename or f"file_{len(validated)}",
             "size": len(content),
             "type": ext[1:],
         })
+    return validated, json_count, pdf_count
 
+
+@router.post(
+    "/upload",
+    response_model=PurchaseUploadResponse,
+    responses={400: {"model": ErrorResponse}, 429: {"description": "Rate limit exceeded"}},
+    summary="Upload Purchase Files",
+)
+@limiter.limit("10/minute")
+async def upload_purchase_files(
+    request: Request,
+    files: List[UploadFile] = File(..., description="Archivos de compras"),
+) -> PurchaseUploadResponse:
+    """Upload purchase invoice files (JSON/PDF). / Sube archivos de compra."""
+    if len(files) > MAX_FILES:
+        raise TooManyFilesError(count=len(files), max_files=MAX_FILES)
+
+    validated_files, json_count, pdf_count = await _validate_and_read_files(files)
     upload_id = str(uuid4())
-    saved_files = await file_service.save_upload(
-        upload_id, validated_files
-    )
-
+    saved_files = await file_service.save_upload(upload_id, validated_files)
     logger.info(
         "Purchase upload %s: %d files (%d json, %d pdf)",
         upload_id, len(saved_files), json_count, pdf_count,
     )
-
     return PurchaseUploadResponse(
         success=True,
-        message=(
-            f"{len(saved_files)} archivos subidos correctamente / "
-            f"{len(saved_files)} files uploaded successfully"
-        ),
+        message=f"{len(saved_files)} archivos subidos correctamente",
         data=PurchaseUploadData(
             upload_id=upload_id,
             files=[FileInfo(**f) for f in saved_files],
             total_files=len(saved_files),
-            json_count=json_count,
-            pdf_count=pdf_count,
+            json_count=json_count, pdf_count=pdf_count,
             expires_at=datetime.utcnow() + timedelta(hours=24),
         ),
     )
 
 
-@router.post(
-    "/process",
-    status_code=202,
-    summary="Process Purchases",
-    description=(
-        "Inicia procesamiento asincrono / "
-        "Start async purchase processing"
-    ),
-)
+def _validate_custom_columns(
+    request_data: PurchaseProcessRequest,
+) -> JSONResponse | None:
+    """Validate custom columns if profile is custom. / Valida columnas custom."""
+    if request_data.column_profile != "custom":
+        return None
+    if not request_data.custom_columns:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "INVALID_REQUEST",
+            "message": "custom_columns requerido con perfil custom / custom_columns required with custom profile",
+        })
+    invalid_cols = [c for c in request_data.custom_columns if c not in VALID_COLUMN_IDS]
+    if invalid_cols:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "INVALID_REQUEST",
+            "message": f"Columnas invalidas: {invalid_cols} / Invalid columns: {invalid_cols}",
+        })
+    return None
+
+
+@router.post("/process", status_code=202, summary="Process Purchases")
 async def process_purchases(
     request_data: PurchaseProcessRequest,
     background_tasks: BackgroundTasks,
 ) -> dict:
-    """
-    Start async processing of uploaded purchase files.
-    Inicia procesamiento asincrono de archivos de compra.
-
-    Args / Argumentos:
-        request_data: Processing configuration
-        background_tasks: FastAPI background tasks
-
-    Returns / Retorna:
-        Dict with job_id and status
-
-    Raises / Lanza:
-        UploadNotFoundError: If upload_id not found
-        APIException: If custom_columns invalid
-    """
+    """Start async processing of purchases. / Inicia procesamiento asincrono."""
     upload = await file_service.get_upload(request_data.upload_id)
     if not upload:
         raise UploadNotFoundError(request_data.upload_id)
 
-    if request_data.column_profile == "custom":
-        if not request_data.custom_columns:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "success": False,
-                    "error": "INVALID_REQUEST",
-                    "message": (
-                        "custom_columns requerido con perfil custom / "
-                        "custom_columns required with custom profile"
-                    ),
-                },
-            )
-        invalid_cols = [
-            c for c in request_data.custom_columns
-            if c not in VALID_COLUMN_IDS
-        ]
-        if invalid_cols:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "success": False,
-                    "error": "INVALID_REQUEST",
-                    "message": (
-                        f"Columnas invalidas: {invalid_cols} / "
-                        f"Invalid columns: {invalid_cols}"
-                    ),
-                },
-            )
+    col_error = _validate_custom_columns(request_data)
+    if col_error:
+        return col_error
 
     job_id = str(uuid4())
     await job_service.create_job(
-        job_id=job_id,
-        upload_id=request_data.upload_id,
+        job_id=job_id, upload_id=request_data.upload_id,
         output_format=request_data.output_format,
         options=request_data.options.model_dump(),
     )
-
-    background_tasks.add_task(
-        _run_processing, job_id, upload, request_data
-    )
-
+    background_tasks.add_task(_run_processing, job_id, upload, request_data)
     return {
         "success": True,
         "message": "Procesamiento iniciado / Processing started",
         "data": {
-            "job_id": job_id,
-            "status": "processing",
+            "job_id": job_id, "status": "processing",
             "created_at": datetime.utcnow().isoformat(),
         },
     }
@@ -433,28 +293,9 @@ async def _run_processing(
         await job_service.fail_job(job_id, str(e))
 
 
-@router.get(
-    "/status/{job_id}",
-    summary="Purchase Status",
-    description=(
-        "Consulta estado del procesamiento / "
-        "Check processing status"
-    ),
-)
+@router.get("/status/{job_id}", summary="Purchase Status")
 async def get_purchase_status(job_id: str) -> dict:
-    """
-    Get processing status for a purchase job.
-    Obtiene estado de procesamiento de un job de compras.
-
-    Args / Argumentos:
-        job_id: Job identifier
-
-    Returns / Retorna:
-        Dict with job status and progress
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found
-    """
+    """Get processing status. / Obtiene estado de procesamiento."""
     job = await job_service.get_job(job_id)
     if not job:
         raise JobNotFoundError(job_id)
@@ -476,28 +317,9 @@ async def get_purchase_status(job_id: str) -> dict:
     }
 
 
-@router.get(
-    "/download/{job_id}",
-    summary="Download Purchase Result",
-    description=(
-        "Descarga el resultado / Download the result file"
-    ),
-)
+@router.get("/download/{job_id}", summary="Download Purchase Result")
 async def download_purchase_result(job_id: str) -> FileResponse:
-    """
-    Download the result file for a completed job.
-    Descarga el archivo de resultado de un job completado.
-
-    Args / Argumentos:
-        job_id: Job identifier
-
-    Returns / Retorna:
-        FileResponse with the generated file
-
-    Raises / Lanza:
-        JobNotFoundError: If job_id not found
-        JobNotCompletedError: If job not completed
-    """
+    """Download result file. / Descarga el archivo de resultado."""
     job = await job_service.get_job(job_id)
     if not job:
         raise JobNotFoundError(job_id)
@@ -518,43 +340,17 @@ async def download_purchase_result(job_id: str) -> FileResponse:
     )
 
 
-@router.get(
-    "/formats",
-    summary="List Formats",
-    description=(
-        "Lista formatos soportados / "
-        "List supported invoice formats"
-    ),
-)
+@router.get("/formats", summary="List Formats")
 async def list_formats() -> dict:
-    """
-    List supported purchase invoice formats.
-    Lista formatos de factura de compra soportados.
-
-    Returns / Retorna:
-        Dict with list of supported formats
-    """
+    """List supported formats. / Lista formatos soportados."""
     return {
         "formats": [f.model_dump() for f in SUPPORTED_FORMATS]
     }
 
 
-@router.get(
-    "/columns",
-    summary="List Columns",
-    description=(
-        "Lista columnas y perfiles / "
-        "List available columns and profiles"
-    ),
-)
+@router.get("/columns", summary="List Columns")
 async def list_columns() -> dict:
-    """
-    List available columns and column profiles.
-    Lista columnas disponibles y perfiles de columnas.
-
-    Returns / Retorna:
-        Dict with profiles and all_columns
-    """
+    """List columns and profiles. / Lista columnas y perfiles."""
     return {
         "profiles": COLUMN_PROFILES,
         "all_columns": [c.model_dump() for c in ALL_COLUMNS],

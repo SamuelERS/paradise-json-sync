@@ -216,72 +216,57 @@ class PurchaseValidator:
     def validate_totals(
         self, invoice: PurchaseInvoice
     ) -> list[ValidationIssue]:
-        """
-        Verify mathematical consistency of totals.
-        Verifica consistencia matematica de totales.
-        """
+        """Verify mathematical consistency. / Verifica consistencia matematica."""
         issues: list[ValidationIssue] = []
-
-        # Total ~ Subtotal + IVA
-        if invoice.subtotal > 0 or invoice.tax > 0:
-            expected_total = invoice.subtotal + invoice.tax
-            if abs(invoice.total - expected_total) > self.tolerance:
-                issues.append(ValidationIssue(
-                    level=ValidationLevel.WARNING,
-                    field="total",
-                    message=(
-                        f"Total ({invoice.total}) != "
-                        f"Subtotal ({invoice.subtotal}) + "
-                        f"IVA ({invoice.tax})"
-                    ),
-                    expected=str(expected_total),
-                    actual=str(invoice.total),
-                ))
-
-        # Subtotal ~ sum(items)
-        if invoice.items:
-            items_sum = sum(item.total for item in invoice.items)
-            if abs(invoice.subtotal - items_sum) > self.tolerance:
-                issues.append(ValidationIssue(
-                    level=ValidationLevel.WARNING,
-                    field="subtotal",
-                    message=(
-                        f"Subtotal ({invoice.subtotal}) != "
-                        f"Suma items ({items_sum})"
-                    ),
-                ))
-
-        # IVA ~ 13% of taxable base
-        if invoice.total_taxable > 0 and invoice.tax > 0:
-            expected_iva = invoice.total_taxable * Decimal("0.13")
-            if abs(invoice.tax - expected_iva) > Decimal("0.10"):
-                issues.append(ValidationIssue(
-                    level=ValidationLevel.WARNING,
-                    field="tax",
-                    message=(
-                        f"IVA ({invoice.tax}) != "
-                        f"13% de gravado ({expected_iva})"
-                    ),
-                ))
-
-        # Categories sum ~ Subtotal
-        category_sum = (
-            invoice.total_taxable
-            + invoice.total_exempt
-            + invoice.total_non_subject
-        )
-        if category_sum > 0:
-            if abs(invoice.subtotal - category_sum) > self.tolerance:
-                issues.append(ValidationIssue(
-                    level=ValidationLevel.INFO,
-                    field="categories",
-                    message=(
-                        f"Categorias ({category_sum}) != "
-                        f"Subtotal ({invoice.subtotal})"
-                    ),
-                ))
-
+        issues.extend(self._check_total_sum(invoice))
+        issues.extend(self._check_items_sum(invoice))
+        issues.extend(self._check_iva_rate(invoice))
+        issues.extend(self._check_categories(invoice))
         return issues
+
+    def _check_total_sum(self, inv: PurchaseInvoice) -> list[ValidationIssue]:
+        """Total ~ Subtotal + IVA."""
+        if inv.subtotal > 0 or inv.tax > 0:
+            expected = inv.subtotal + inv.tax
+            if abs(inv.total - expected) > self.tolerance:
+                return [ValidationIssue(
+                    level=ValidationLevel.WARNING, field="total",
+                    message=f"Total ({inv.total}) != Subtotal ({inv.subtotal}) + IVA ({inv.tax})",
+                    expected=str(expected), actual=str(inv.total),
+                )]
+        return []
+
+    def _check_items_sum(self, inv: PurchaseInvoice) -> list[ValidationIssue]:
+        """Subtotal ~ sum(items.total)."""
+        if inv.items:
+            items_sum = sum(item.total for item in inv.items)
+            if abs(inv.subtotal - items_sum) > self.tolerance:
+                return [ValidationIssue(
+                    level=ValidationLevel.WARNING, field="subtotal",
+                    message=f"Subtotal ({inv.subtotal}) != Suma items ({items_sum})",
+                )]
+        return []
+
+    def _check_iva_rate(self, inv: PurchaseInvoice) -> list[ValidationIssue]:
+        """IVA ~ 13% of taxable base."""
+        if inv.total_taxable > 0 and inv.tax > 0:
+            expected_iva = inv.total_taxable * Decimal("0.13")
+            if abs(inv.tax - expected_iva) > Decimal("0.10"):
+                return [ValidationIssue(
+                    level=ValidationLevel.WARNING, field="tax",
+                    message=f"IVA ({inv.tax}) != 13% de gravado ({expected_iva})",
+                )]
+        return []
+
+    def _check_categories(self, inv: PurchaseInvoice) -> list[ValidationIssue]:
+        """Categories sum ~ Subtotal."""
+        cat_sum = inv.total_taxable + inv.total_exempt + inv.total_non_subject
+        if cat_sum > 0 and abs(inv.subtotal - cat_sum) > self.tolerance:
+            return [ValidationIssue(
+                level=ValidationLevel.INFO, field="categories",
+                message=f"Categorias ({cat_sum}) != Subtotal ({inv.subtotal})",
+            )]
+        return []
 
     def validate_dates(
         self, invoice: PurchaseInvoice
