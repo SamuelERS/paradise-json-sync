@@ -122,12 +122,12 @@
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
-| 4.1 | Crear `PurchaseValidator` | 🔴 | — | `backend/src/core/purchases/validator.py` |
-| 4.2 | Validación de totales (items vs resumen) | 🔴 | — | Con tolerancia configurable |
-| 4.3 | Detección de facturas duplicadas | 🔴 | — | Por número de control + emisor |
-| 4.4 | Validación de cálculos IVA | 🔴 | — | 13% estándar El Salvador |
-| 4.5 | Reporte de validación (warnings, errors) | 🔴 | — | Mismo patrón que JSONProcessor |
-| 4.6 | Tests unitarios (>=70%) | 🔴 | — | Casos válidos e inválidos |
+| 4.1 | Crear `PurchaseValidator` | 🟢 | Claude (Opus 4.6) | 452 líneas, validate + validate_batch |
+| 4.2 | Validación de totales (items vs resumen) | 🟢 | Claude (Opus 4.6) | 4 verificaciones, tolerancia configurable |
+| 4.3 | Detección de facturas duplicadas | 🟢 | Claude (Opus 4.6) | control_number+NIT=ERROR, document_number=WARNING |
+| 4.4 | Validación de cálculos IVA | 🟢 | Claude (Opus 4.6) | 13% con tolerancia Decimal("0.10") |
+| 4.5 | Reporte de validación (warnings, errors) | 🟢 | Claude (Opus 4.6) | ValidationLevel, ValidationIssue, ValidationResult |
+| 4.6 | Tests unitarios (>=70%) | 🟢 | Claude (Opus 4.6) | 32 tests, 98.91% cobertura |
 
 ---
 
@@ -222,13 +222,13 @@
 | 1 | Modelo de Datos | 7 | 7 | 🟢 |
 | 2 | Detector de Formato | 7 | 6 | 🟢 |
 | 3 | Mappers y Registro | 6 | 5 | 🟢 |
-| 4 | Validador de Compras | 6 | 0 | 🔴 |
+| 4 | Validador de Compras | 6 | 6 | 🟢 |
 | 5 | API y Servicios | 7 | 0 | 🔴 |
 | 6 | Exportador Configurable | 8 | 0 | 🔴 |
 | 7 | Soporte PDF | 5 | 0 | 🔴 |
 | 8 | Frontend UI | 7 | 0 | 🔴 |
 | 9 | Integración y Polish | 6 | 0 | 🔴 |
-| **TOTAL** | | **73** | **32** | **🟡** |
+| **TOTAL** | | **73** | **38** | **🟡** |
 
 ---
 
