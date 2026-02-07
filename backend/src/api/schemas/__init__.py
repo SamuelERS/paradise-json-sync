@@ -12,6 +12,15 @@ from src.api.schemas.process import (
     ProcessRequest,
     ProcessResponse,
 )
+from src.api.schemas.purchases import (
+    ProcessingResult,
+    PurchaseColumnInfo,
+    PurchaseFormatInfo,
+    PurchaseProcessOptions,
+    PurchaseProcessRequest,
+    PurchaseUploadData,
+    PurchaseUploadResponse,
+)
 from src.api.schemas.responses import ErrorResponse, HealthResponse
 from src.api.schemas.status import JobData, JobResult, StatusResponse
 from src.api.schemas.upload import FileInfo, UploadData, UploadResponse
@@ -33,4 +42,12 @@ __all__ = [
     # Responses
     "ErrorResponse",
     "HealthResponse",
+    # Purchases
+    "PurchaseProcessOptions",
+    "PurchaseProcessRequest",
+    "PurchaseUploadData",
+    "PurchaseUploadResponse",
+    "PurchaseFormatInfo",
+    "PurchaseColumnInfo",
+    "ProcessingResult",
 ]

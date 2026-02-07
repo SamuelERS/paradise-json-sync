@@ -28,7 +28,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from src.api.exceptions import setup_exception_handlers
-from src.api.routes import download, health, process, status, upload
+from src.api.routes import download, health, process, purchases, status, upload
 from src.core.rate_limiter import TESTING, limiter
 
 # Configure logging
@@ -79,6 +79,7 @@ app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(process.router, prefix="/api", tags=["Process"])
 app.include_router(status.router, prefix="/api", tags=["Status"])
 app.include_router(download.router, prefix="/api", tags=["Download"])
+app.include_router(purchases.router, prefix="/api/purchases", tags=["Purchases"])
 
 # Setup exception handlers (includes MultiPartException and HTTPException handlers)
 # Configurar manejadores de excepciones (incluye MultiPartException y HTTPException)
