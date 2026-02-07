@@ -12,16 +12,47 @@ This package provides / Este paquete provee:
                   Enum de formatos de factura reconocidos
 - DetectionResult: Result model for format detection
                    Modelo de resultado para deteccion de formato
+- BaseMapper: Abstract base class for format mappers
+              Clase base abstracta para mappers de formato
+- MappingError: Exception for mapping failures
+                Excepcion para fallos de mapeo
+- MapperRegistry: Central mapper registry
+                  Registro central de mappers
+- MapperNotFoundError: Error when no mapper found
+                       Error cuando no se encuentra mapper
+- create_default_registry: Factory for default registry
+                           Fabrica para registry predeterminado
+- DTEStandardMapper: Mapper for DTE standard format
+                     Mapper para formato DTE estandar
+- GenericFallbackMapper: Fallback mapper using synonyms
+                         Mapper de respaldo usando sinonimos
 """
 
+from src.core.purchases.base_mapper import BaseMapper, MappingError
 from src.core.purchases.format_detector import (
     DetectedFormat,
     DetectionResult,
     FormatDetector,
 )
+from src.core.purchases.mapper_registry import (
+    MapperNotFoundError,
+    MapperRegistry,
+    create_default_registry,
+)
+from src.core.purchases.mappers.dte_standard import DTEStandardMapper
+from src.core.purchases.mappers.generic_fallback import (
+    GenericFallbackMapper,
+)
 
 __all__ = [
+    "BaseMapper",
     "DetectedFormat",
     "DetectionResult",
+    "DTEStandardMapper",
     "FormatDetector",
+    "GenericFallbackMapper",
+    "MapperNotFoundError",
+    "MapperRegistry",
+    "MappingError",
+    "create_default_registry",
 ]
