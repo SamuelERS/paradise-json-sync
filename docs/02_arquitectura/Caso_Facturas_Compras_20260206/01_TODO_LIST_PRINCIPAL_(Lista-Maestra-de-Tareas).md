@@ -106,12 +106,12 @@
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
-| 3.1 | Crear interfaz `BaseMapper` (clase abstracta) | 🔴 | — | Contrato para todos los mappers |
-| 3.2 | Crear `MapperRegistry` (registro central) | 🔴 | — | Patrón Registry + Strategy |
-| 3.3 | Implementar `DTEStandardMapper` | 🔴 | — | Formato estándar de Hacienda |
-| 3.4 | Implementar `GenericFallbackMapper` | 🔴 | — | Heurísticas para formatos desconocidos |
-| 3.5 | Tests unitarios por mapper (>=70%) | 🔴 | — | Un test file por mapper |
-| 3.6 | Agregar mappers adicionales según datos reales | 🔴 | — | Se irán sumando mappers |
+| 3.1 | Crear interfaz `BaseMapper` (clase abstracta) | 🟢 | Claude (Opus 4.6) | 171 líneas, _parse_decimal, _parse_date, _safe_get + MappingError |
+| 3.2 | Crear `MapperRegistry` (registro central) | 🟢 | Claude (Opus 4.6) | 149 líneas, Registry + Strategy + factory |
+| 3.3 | Implementar `DTEStandardMapper` | 🟢 | Claude (Opus 4.6) | 385 líneas, 9 mapeos tipoDte, sello fiscal, apéndice |
+| 3.4 | Implementar `GenericFallbackMapper` | 🟢 | Claude (Opus 4.6) | 230 líneas, 5 tablas sinónimos, notación punto |
+| 3.5 | Tests unitarios por mapper (>=70%) | 🟢 | Claude (Opus 4.6) | 70 tests, 91% cobertura |
+| 3.6 | Agregar mappers adicionales según datos reales | ⏸️ | — | Depende de datos reales de proveedores |
 
 ---
 
@@ -221,14 +221,14 @@
 | 0 | Documentación Arquitectónica | 14 | 14 | 🟢 |
 | 1 | Modelo de Datos | 7 | 7 | 🟢 |
 | 2 | Detector de Formato | 7 | 6 | 🟢 |
-| 3 | Mappers y Registro | 6 | 0 | 🔴 |
+| 3 | Mappers y Registro | 6 | 5 | 🟢 |
 | 4 | Validador de Compras | 6 | 0 | 🔴 |
 | 5 | API y Servicios | 7 | 0 | 🔴 |
 | 6 | Exportador Configurable | 8 | 0 | 🔴 |
 | 7 | Soporte PDF | 5 | 0 | 🔴 |
 | 8 | Frontend UI | 7 | 0 | 🔴 |
 | 9 | Integración y Polish | 6 | 0 | 🔴 |
-| **TOTAL** | | **73** | **27** | **🟡** |
+| **TOTAL** | | **73** | **32** | **🟡** |
 
 ---
 
