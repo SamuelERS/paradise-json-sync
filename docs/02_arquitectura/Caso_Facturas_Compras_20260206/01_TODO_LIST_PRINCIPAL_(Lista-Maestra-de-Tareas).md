@@ -72,13 +72,13 @@
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
-| 1.1 | Crear modelo `PurchaseInvoice` en Pydantic | 🔴 | — | `backend/src/models/purchase_invoice.py` |
-| 1.2 | Crear modelo `PurchaseInvoiceItem` | 🔴 | — | Items con todos los campos DTE |
-| 1.3 | Crear enum `PurchaseDocumentType` | 🔴 | — | Todos los tipos DTE de compra |
-| 1.4 | Crear modelo `SupplierInfo` | 🔴 | — | Datos del proveedor (emisor) |
-| 1.5 | Agregar campo `raw_data: Optional[dict]` a PurchaseInvoice | 🔴 | — | Almacena JSON original sin pérdida |
-| 1.6 | Validadores del modelo (totales, IVA, fechas) | 🔴 | — | Misma tolerancia que Invoice actual |
-| 1.7 | Tests unitarios del modelo (>=70% cobertura) | 🔴 | — | `backend/tests/unit/test_purchase_invoice.py` |
+| 1.1 | Crear modelo `PurchaseInvoice` en Pydantic | 🟢 | Claude (Opus 4.6) | 497 líneas, 33 campos, Pydantic v2 |
+| 1.2 | Crear modelo `PurchaseInvoiceItem` | 🟢 | Claude (Opus 4.6) | 13 campos con validador de totales |
+| 1.3 | Crear enum `PurchaseDocumentType` | 🟢 | Claude (Opus 4.6) | 9 valores verificados por test |
+| 1.4 | Crear modelo `SupplierInfo` | 🟢 | Claude (Opus 4.6) | name requerido + 9 opcionales |
+| 1.5 | Agregar campo `raw_data: Optional[dict]` a PurchaseInvoice | 🟢 | Claude (Opus 4.6) | JSON original preservado sin pérdida |
+| 1.6 | Validadores del modelo (totales, IVA, fechas) | 🟢 | Claude (Opus 4.6) | 4 validadores, WARNING no ERROR |
+| 1.7 | Tests unitarios del modelo (>=70% cobertura) | 🟢 | Claude (Opus 4.6) | 24 tests, 98.47% cobertura |
 
 ---
 
@@ -219,7 +219,7 @@
 | Fase | Descripción | Tareas | Completadas | Estado |
 |------|-------------|--------|-------------|--------|
 | 0 | Documentación Arquitectónica | 14 | 14 | 🟢 |
-| 1 | Modelo de Datos | 7 | 0 | 🔴 |
+| 1 | Modelo de Datos | 7 | 7 | 🟢 |
 | 2 | Detector de Formato | 7 | 0 | 🔴 |
 | 3 | Mappers y Registro | 6 | 0 | 🔴 |
 | 4 | Validador de Compras | 6 | 0 | 🔴 |
@@ -228,7 +228,7 @@
 | 7 | Soporte PDF | 5 | 0 | 🔴 |
 | 8 | Frontend UI | 7 | 0 | 🔴 |
 | 9 | Integración y Polish | 6 | 0 | 🔴 |
-| **TOTAL** | | **73** | **14** | **🟡** |
+| **TOTAL** | | **73** | **21** | **🟡** |
 
 ---
 
