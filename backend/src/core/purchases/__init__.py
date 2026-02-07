@@ -51,6 +51,7 @@ from src.core.purchases.mappers.dte_standard import DTEStandardMapper
 from src.core.purchases.mappers.generic_fallback import (
     GenericFallbackMapper,
 )
+from src.core.purchases.purchase_exporter import PurchaseExporter
 from src.core.purchases.validator import (
     PurchaseValidator,
     ValidationIssue,
@@ -68,6 +69,7 @@ __all__ = [
     "MapperNotFoundError",
     "MapperRegistry",
     "MappingError",
+    "PurchaseExporter",
     "PurchaseValidator",
     "ValidationIssue",
     "ValidationLevel",

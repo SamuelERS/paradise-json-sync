@@ -24,6 +24,7 @@ from src.api.schemas.purchases import ProcessingResult
 from src.core.purchases.base_mapper import MappingError
 from src.core.purchases.format_detector import FormatDetector
 from src.core.purchases.mapper_registry import create_default_registry
+from src.core.purchases.purchase_exporter import PurchaseExporter
 from src.core.purchases.validator import (
     PurchaseValidator,
     ValidationLevel,
@@ -53,6 +54,7 @@ class PurchaseProcessorService:
         self.detector = FormatDetector()
         self.registry = create_default_registry()
         self.validator = PurchaseValidator()
+        self.exporter = PurchaseExporter()
 
     async def process(
         self,
@@ -77,12 +79,27 @@ class PurchaseProcessorService:
             else:
                 errors.append(result)
 
+        # 4. Export / Exportar
+        output_path = ""
+        if invoices:
+            raw_opts = getattr(config, "options", None)
+            opts_dict = raw_opts.model_dump() if hasattr(raw_opts, "model_dump") else raw_opts
+            output_path = self.exporter.export(
+                invoices=invoices,
+                output_dir=str(Path(file_paths[0]).parent) if file_paths else "/tmp",
+                format=getattr(config, "output_format", "xlsx"),
+                column_profile=getattr(config, "column_profile", "completo"),
+                custom_columns=getattr(config, "custom_columns", None),
+                options=opts_dict,
+            )
+
         return ProcessingResult(
             invoices=[inv.model_dump(mode="json") for inv in invoices],
             invoice_count=len(invoices),
             error_count=len(errors),
             errors=errors,
             formats_summary=self._count_formats(invoices),
+            output_path=output_path,
         )
 
     def _process_single(

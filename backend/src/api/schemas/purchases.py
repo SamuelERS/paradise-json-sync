@@ -151,3 +151,4 @@ class ProcessingResult(BaseModel):
     error_count: int = 0
     errors: list = Field(default_factory=list)
     formats_summary: dict = Field(default_factory=dict)
+    output_path: str = ""
