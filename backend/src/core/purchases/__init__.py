@@ -26,6 +26,14 @@ This package provides / Este paquete provee:
                      Mapper para formato DTE estandar
 - GenericFallbackMapper: Fallback mapper using synonyms
                          Mapper de respaldo usando sinonimos
+- PurchaseValidator: Purchase invoice validator
+                     Validador de facturas de compra
+- ValidationResult: Validation result model
+                    Modelo de resultado de validacion
+- ValidationIssue: Individual validation issue model
+                   Modelo de problema de validacion individual
+- ValidationLevel: Severity level enum
+                   Enum de nivel de severidad
 """
 
 from src.core.purchases.base_mapper import BaseMapper, MappingError
@@ -43,6 +51,12 @@ from src.core.purchases.mappers.dte_standard import DTEStandardMapper
 from src.core.purchases.mappers.generic_fallback import (
     GenericFallbackMapper,
 )
+from src.core.purchases.validator import (
+    PurchaseValidator,
+    ValidationIssue,
+    ValidationLevel,
+    ValidationResult,
+)
 
 __all__ = [
     "BaseMapper",
@@ -54,5 +68,9 @@ __all__ = [
     "MapperNotFoundError",
     "MapperRegistry",
     "MappingError",
+    "PurchaseValidator",
+    "ValidationIssue",
+    "ValidationLevel",
+    "ValidationResult",
     "create_default_registry",
 ]
