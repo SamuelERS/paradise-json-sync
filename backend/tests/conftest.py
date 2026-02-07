@@ -50,6 +50,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.models.invoice import Invoice, InvoiceItem, InvoiceType
+from src.models.purchase_invoice import (
+    PurchaseDocumentType,
+    PurchaseInvoice,
+    PurchaseInvoiceItem,
+    SupplierInfo,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -398,10 +404,86 @@ def corrupted_pdf_file(tmp_path: Path) -> Path:
 def empty_json_file(tmp_path: Path) -> Path:
     """
     Empty JSON file for error handling tests.
-    Archivo JSON vacío para pruebas de manejo de errores.
+    Archivo JSON vacio para pruebas de manejo de errores.
     """
     json_file = tmp_path / "empty.json"
     with open(json_file, "w", encoding="utf-8") as f:
         f.write("{}")
 
     return json_file
+
+
+# === Purchase Invoice Fixtures / Fixtures de Facturas de Compra ===
+
+
+@pytest.fixture
+def sample_supplier_info() -> SupplierInfo:
+    """
+    Sample supplier information.
+    Informacion de proveedor de muestra.
+    """
+    return SupplierInfo(
+        name="DISTRIBUIDORA ABC S.A. DE C.V.",
+        commercial_name="ABC Distribuciones",
+        nit="0614-123456-789-0",
+        nrc="12345-6",
+        economic_activity="Venta al por mayor",
+        address="Blvd. Los Heroes, San Salvador",
+        phone="2222-3333",
+        email="ventas@abc.com.sv",
+        establishment_code="S001",
+        establishment_type="Sucursal",
+    )
+
+
+@pytest.fixture
+def sample_purchase_invoice_item() -> PurchaseInvoiceItem:
+    """
+    Sample purchase invoice item.
+    Item de factura de compra de muestra.
+    """
+    return PurchaseInvoiceItem(
+        item_number=1,
+        product_code="PAP-001",
+        description="Papel Bond Carta Resma 500 hojas",
+        unit_measure=59,
+        quantity=Decimal("10"),
+        unit_price=Decimal("3.50"),
+        taxable_sale=Decimal("35.00"),
+        item_tax=Decimal("4.55"),
+        total=Decimal("35.00"),
+    )
+
+
+@pytest.fixture
+def sample_purchase_invoice(
+    sample_supplier_info: SupplierInfo,
+    sample_purchase_invoice_item: PurchaseInvoiceItem,
+) -> PurchaseInvoice:
+    """
+    Sample complete purchase invoice.
+    Factura de compra completa de muestra.
+    """
+    return PurchaseInvoice(
+        document_number="A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+        control_number="DTE-03-00000001-000000000000001",
+        document_type=PurchaseDocumentType.CCF,
+        issue_date=date(2026, 2, 6),
+        emission_time="14:30:00",
+        currency="USD",
+        dte_version=3,
+        supplier=sample_supplier_info,
+        receiver_name="MI EMPRESA S.A. DE C.V.",
+        receiver_nit="0614-999999-999-9",
+        items=[sample_purchase_invoice_item],
+        subtotal=Decimal("35.00"),
+        total_taxable=Decimal("35.00"),
+        tax=Decimal("4.55"),
+        total=Decimal("39.55"),
+        total_in_words="TREINTA Y NUEVE 55/100 DOLARES",
+        payment_condition=1,
+        source_file="factura_abc_001.json",
+        detected_format="DTE_STANDARD",
+        detection_confidence=0.95,
+        raw_data={"identificacion": {}, "emisor": {}, "receptor": {}},
+    )
