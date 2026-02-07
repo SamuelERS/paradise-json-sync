@@ -89,13 +89,13 @@
 
 | # | Tarea | Estado | Responsable | Notas |
 |---|-------|--------|-------------|-------|
-| 2.1 | Crear clase `FormatDetector` | 🔴 | — | `backend/src/core/purchases/format_detector.py` |
-| 2.2 | Implementar fingerprinting por estructura JSON | 🔴 | — | Puntaje por presencia de campos clave |
-| 2.3 | Implementar detección de versión DTE | 🔴 | — | v1, v2, v3 del esquema |
-| 2.4 | Crear enum `DetectedFormat` con todos los formatos | 🔴 | — | DTE_STANDARD, DTE_VARIANT_A, etc. |
-| 2.5 | Implementar fallback para formatos desconocidos | 🔴 | — | Heurísticas genéricas |
-| 2.6 | Tests unitarios (>=70% cobertura) | 🔴 | — | JSONs de muestra por formato |
-| 2.7 | Integrar con muestras reales cuando estén disponibles | 🔴 | — | Depende de datos reales |
+| 2.1 | Crear clase `FormatDetector` | 🟢 | Claude (Opus 4.6) | 496 líneas, fingerprinting + scoring |
+| 2.2 | Implementar fingerprinting por estructura JSON | 🟢 | Claude (Opus 4.6) | 4 fingerprints, pesos 40/30/10/20 |
+| 2.3 | Implementar detección de versión DTE | 🟢 | Claude (Opus 4.6) | Via nested_checks en identificacion |
+| 2.4 | Crear enum `DetectedFormat` con todos los formatos | 🟢 | Claude (Opus 4.6) | 6 valores incluyendo PDF_EXTRACTED |
+| 2.5 | Implementar fallback para formatos desconocidos | 🟢 | Claude (Opus 4.6) | UNKNOWN cuando score < 0.50 |
+| 2.6 | Tests unitarios (>=70% cobertura) | 🟢 | Claude (Opus 4.6) | 18 tests, 94.35% cobertura |
+| 2.7 | Integrar con muestras reales cuando estén disponibles | ⏸️ | — | Depende de datos reales de proveedores |
 
 ---
 
@@ -220,7 +220,7 @@
 |------|-------------|--------|-------------|--------|
 | 0 | Documentación Arquitectónica | 14 | 14 | 🟢 |
 | 1 | Modelo de Datos | 7 | 7 | 🟢 |
-| 2 | Detector de Formato | 7 | 0 | 🔴 |
+| 2 | Detector de Formato | 7 | 6 | 🟢 |
 | 3 | Mappers y Registro | 6 | 0 | 🔴 |
 | 4 | Validador de Compras | 6 | 0 | 🔴 |
 | 5 | API y Servicios | 7 | 0 | 🔴 |
@@ -228,7 +228,7 @@
 | 7 | Soporte PDF | 5 | 0 | 🔴 |
 | 8 | Frontend UI | 7 | 0 | 🔴 |
 | 9 | Integración y Polish | 6 | 0 | 🔴 |
-| **TOTAL** | | **73** | **21** | **🟡** |
+| **TOTAL** | | **73** | **27** | **🟡** |
 
 ---
 
