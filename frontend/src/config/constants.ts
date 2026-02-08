@@ -71,6 +71,12 @@ export const API_ENDPOINTS = {
   DOWNLOAD_EXCEL: '/api/download/excel',
   DOWNLOAD_PDF: '/api/download/pdf',
   DOWNLOAD_JSON: '/api/download/json',
+  PURCHASES_UPLOAD: '/api/purchases/upload',
+  PURCHASES_PROCESS: '/api/purchases/process',
+  PURCHASES_STATUS: '/api/purchases/status',
+  PURCHASES_DOWNLOAD: '/api/purchases/download',
+  PURCHASES_FORMATS: '/api/purchases/formats',
+  PURCHASES_COLUMNS: '/api/purchases/columns',
 } as const;
 
 /**

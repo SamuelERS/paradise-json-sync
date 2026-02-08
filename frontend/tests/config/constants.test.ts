@@ -141,8 +141,8 @@ describe('API_ENDPOINTS', () => {
     });
   });
 
-  it('has exactly 6 endpoints', () => {
-    expect(Object.keys(API_ENDPOINTS).length).toBe(6);
+  it('has exactly 12 endpoints', () => {
+    expect(Object.keys(API_ENDPOINTS).length).toBe(12);
   });
 });
 

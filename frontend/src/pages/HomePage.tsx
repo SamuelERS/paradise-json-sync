@@ -14,6 +14,7 @@ import { useDownload } from '../hooks/useDownload';
 import { useUpload } from '../hooks/useUpload';
 import { useProcess } from '../hooks/useProcess';
 import type { DownloadType } from '../services/downloadService';
+import { ModeToggle, PurchaseWorkflow } from '../components/purchases';
 
 /**
  * Step Display Names / Nombres de Pasos para Mostrar
@@ -30,6 +31,7 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 export function HomePage() {
+  const [mode, setMode] = useState<'ventas' | 'compras'>('ventas');
   const [appStatus, setAppStatus] = useState<AppStatus>('idle');
   const [results, setResults] = useState<ProcessResults | undefined>();
   const [error, setError] = useState<string | null>(null);
@@ -205,60 +207,69 @@ export function HomePage() {
             Consolida archivos JSON y PDF de facturación en un solo documento
           </p>
         </div>
-        <div className="space-y-6">
-          {error && (
-            <Alert
-              type="error"
-              title="Error"
-              message={error}
-              onClose={() => setError(null)}
-            />
-          )}
-          {!isBusy && appStatus !== 'completed' && (
-            <Card>
-              <div className="space-y-6">
-                <Dropzone
-                  onFilesSelected={handleFilesSelected}
-                  disabled={isBusy}
-                />
-                <FileList files={files} onRemove={handleRemoveFile} />
-                {files.length > 0 && (
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={handleProcess}
-                      disabled={isBusy}
-                    >
-                      Procesar {files.length} archivo{files.length !== 1 ? 's' : ''}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-          {isBusy && (
-            <UploadProgress
-              totalFiles={files.length}
-              processedFiles={files.filter((f) => f.status === 'success').length}
-              currentFile={stepLabel}
-              progress={totalProgress}
-              status={isUploading ? 'uploading' : 'processing'}
-            />
-          )}
-          {(appStatus === 'completed' || appStatus === 'error') && (
-            <ResultsPanel
-              status={appStatus === 'error' ? 'error' : 'completed'}
-              results={results}
-              isDownloading={isDownloading}
-              downloadType={downloadType}
-              onDownloadExcel={() => handleDownload('excel')}
-              onDownloadPdf={() => handleDownload('pdf')}
-              onDownloadJson={() => handleDownload('json')}
-              onReset={handleReset}
-            />
-          )}
-        </div>
+
+        <ModeToggle activeMode={mode} onModeChange={setMode} />
+
+        {mode === 'ventas' && (
+          <div className="space-y-6">
+            {error && (
+              <Alert
+                type="error"
+                title="Error"
+                message={error}
+                onClose={() => setError(null)}
+              />
+            )}
+            {!isBusy && appStatus !== 'completed' && (
+              <Card>
+                <div className="space-y-6">
+                  <Dropzone
+                    onFilesSelected={handleFilesSelected}
+                    disabled={isBusy}
+                  />
+                  <FileList files={files} onRemove={handleRemoveFile} />
+                  {files.length > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={handleProcess}
+                        disabled={isBusy}
+                      >
+                        Procesar {files.length} archivo{files.length !== 1 ? 's' : ''}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+            {isBusy && (
+              <UploadProgress
+                totalFiles={files.length}
+                processedFiles={files.filter((f) => f.status === 'success').length}
+                currentFile={stepLabel}
+                progress={totalProgress}
+                status={isUploading ? 'uploading' : 'processing'}
+              />
+            )}
+            {(appStatus === 'completed' || appStatus === 'error') && (
+              <ResultsPanel
+                status={appStatus === 'error' ? 'error' : 'completed'}
+                results={results}
+                isDownloading={isDownloading}
+                downloadType={downloadType}
+                onDownloadExcel={() => handleDownload('excel')}
+                onDownloadPdf={() => handleDownload('pdf')}
+                onDownloadJson={() => handleDownload('json')}
+                onReset={handleReset}
+              />
+            )}
+          </div>
+        )}
+
+        {mode === 'compras' && (
+          <PurchaseWorkflow />
+        )}
       </div>
     </MainLayout>
   );

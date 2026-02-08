@@ -59,3 +59,60 @@ export type AppStatus =
   | 'processing'
   | 'completed'
   | 'error';
+
+/** Purchase column definition / Definición de columna de compras */
+export interface ColumnDef {
+  id: string;
+  label: string;
+  category: string;
+}
+
+/** Purchase upload response / Respuesta de carga de compras */
+export interface PurchaseUploadResponse {
+  upload_id: string;
+  file_count: number;
+  json_count: number;
+  pdf_count: number;
+  files: Array<{ filename: string; type: string; path: string }>;
+}
+
+/** Purchase process options / Opciones de procesamiento de compras */
+export interface PurchaseProcessOptions {
+  upload_id: string;
+  output_format: string;
+  column_profile: string;
+  custom_columns?: string[];
+  options?: {
+    include_summary?: boolean;
+    include_items_sheet?: boolean;
+    include_raw_data?: boolean;
+  };
+}
+
+/** Purchase status response / Respuesta de estado de compras */
+export interface PurchaseStatusResponse {
+  job_id: string;
+  status: string;
+  progress: number;
+  current_step: string;
+  result?: {
+    invoice_count: number;
+    error_count: number;
+    errors: Array<{ file: string; reason: string }>;
+    output_path: string;
+  };
+}
+
+/** Purchase format info / Info de formato de compras */
+export interface PurchaseFormatInfo {
+  id: string;
+  label: string;
+  extension: string;
+}
+
+/** Purchase column info / Info de columna de compras */
+export interface PurchaseColumnInfo {
+  id: string;
+  label: string;
+  category: string;
+}
