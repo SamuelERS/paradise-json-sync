@@ -254,9 +254,9 @@ async def _run_processing(
     """
     try:
         files = upload.get("files", [])
-        json_paths = [
+        all_paths = [
             f["path"] for f in files
-            if f.get("type") == "json"
+            if f.get("type") in ("json", "pdf")
         ]
 
         async def progress_cb(
@@ -269,7 +269,7 @@ async def _run_processing(
 
         service = PurchaseProcessorService()
         result = await service.process(
-            file_paths=json_paths,
+            file_paths=all_paths,
             config=config,
             progress_callback=progress_cb,
         )

@@ -140,10 +140,16 @@ def create_default_registry() -> MapperRegistry:
     from src.core.purchases.mappers.generic_fallback import (
         GenericFallbackMapper,
     )
+    from src.core.purchases.mappers.pdf_extracted import (
+        PDFExtractedMapper,
+    )
 
     registry = MapperRegistry()
     registry.register(
         DetectedFormat.DTE_STANDARD, DTEStandardMapper(),
+    )
+    registry.register(
+        DetectedFormat.PDF_EXTRACTED, PDFExtractedMapper(),
     )
     registry.set_fallback(GenericFallbackMapper())
     return registry

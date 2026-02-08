@@ -798,7 +798,8 @@ class TestMapperRegistry:
         assert isinstance(registry, MapperRegistry)
         formats = registry.list_formats()
         assert DetectedFormat.DTE_STANDARD in formats
-        assert len(formats) == 1
+        assert DetectedFormat.PDF_EXTRACTED in formats
+        assert len(formats) == 2
 
         # Should have fallback for UNKNOWN
         mapper = registry.get_mapper(DetectedFormat.UNKNOWN)

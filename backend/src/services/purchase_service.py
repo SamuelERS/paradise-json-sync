@@ -22,7 +22,8 @@ from typing import Callable, Optional
 
 from src.api.schemas.purchases import ProcessingResult
 from src.core.purchases.base_mapper import MappingError
-from src.core.purchases.format_detector import FormatDetector
+from src.core.purchases.format_detector import DetectedFormat, FormatDetector
+from src.core.purchases.pdf_extractor import PDFExtractionError, PDFExtractor
 from src.core.purchases.mapper_registry import create_default_registry
 from src.core.purchases.purchase_exporter import PurchaseExporter
 from src.core.purchases.validator import (
@@ -55,6 +56,7 @@ class PurchaseProcessorService:
         self.registry = create_default_registry()
         self.validator = PurchaseValidator()
         self.exporter = PurchaseExporter()
+        self.pdf_extractor = PDFExtractor()
 
     async def process(
         self,
@@ -103,16 +105,26 @@ class PurchaseProcessorService:
         )
 
     def _process_single(
-        self, path: str, existing: list[PurchaseInvoice]
+        self, path: str, existing: list[PurchaseInvoice],
     ) -> PurchaseInvoice | dict:
-        """Process a single file. Returns invoice or error dict."""
+        """
+        Process a single file (JSON or PDF). Returns invoice or error dict.
+        Procesa un solo archivo (JSON o PDF). Retorna factura o dict de error.
+        """
         try:
-            raw_data = self._load_json(path)
-            detected = self.detector.detect(raw_data)
-            mapper = self.registry.get_mapper(detected.format)
+            if path.lower().endswith(".pdf"):
+                raw_data = self.pdf_extractor.extract(path)
+                detected_format = DetectedFormat.PDF_EXTRACTED
+                confidence = 0.5
+            else:
+                raw_data = self._load_json(path)
+                detected = self.detector.detect(raw_data)
+                detected_format = detected.format
+                confidence = detected.confidence
+            mapper = self.registry.get_mapper(detected_format)
             purchase = mapper.map(raw_data, source_file=path)
-            purchase.detected_format = detected.format.value
-            purchase.detection_confidence = detected.confidence
+            purchase.detected_format = detected_format.value
+            purchase.detection_confidence = confidence
             validation = self.validator.validate(purchase, existing=existing)
             purchase.processing_warnings = [str(i) for i in validation.issues]
             if validation.is_valid:
@@ -121,6 +133,9 @@ class PurchaseProcessorService:
                 str(e) for e in validation.issues if e.level == ValidationLevel.ERROR
             ]
             return {"file": path, "reason": "; ".join(error_msgs)}
+        except PDFExtractionError as e:
+            logger.warning("PDF extraction error for %s: %s", path, e)
+            return {"file": path, "reason": str(e)}
         except MappingError as e:
             logger.warning("Mapping error for %s: %s", path, e)
             return {"file": path, "reason": str(e)}

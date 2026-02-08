@@ -26,6 +26,12 @@ This package provides / Este paquete provee:
                      Mapper para formato DTE estandar
 - GenericFallbackMapper: Fallback mapper using synonyms
                          Mapper de respaldo usando sinonimos
+- PDFExtractedMapper: Mapper for PDF-extracted invoice data
+                      Mapper para datos de factura extraidos de PDF
+- PDFExtractor: Extract data from digital PDF invoices
+                Extrae datos de facturas PDF digitales
+- PDFExtractionError: Exception for PDF extraction failures
+                      Excepcion para fallos de extraccion de PDF
 - PurchaseValidator: Purchase invoice validator
                      Validador de facturas de compra
 - ValidationResult: Validation result model
@@ -51,6 +57,8 @@ from src.core.purchases.mappers.dte_standard import DTEStandardMapper
 from src.core.purchases.mappers.generic_fallback import (
     GenericFallbackMapper,
 )
+from src.core.purchases.mappers.pdf_extracted import PDFExtractedMapper
+from src.core.purchases.pdf_extractor import PDFExtractionError, PDFExtractor
 from src.core.purchases.purchase_exporter import PurchaseExporter
 from src.core.purchases.validator import (
     PurchaseValidator,
@@ -69,6 +77,9 @@ __all__ = [
     "MapperNotFoundError",
     "MapperRegistry",
     "MappingError",
+    "PDFExtractionError",
+    "PDFExtractedMapper",
+    "PDFExtractor",
     "PurchaseExporter",
     "PurchaseValidator",
     "ValidationIssue",
